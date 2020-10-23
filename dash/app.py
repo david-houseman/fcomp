@@ -10,60 +10,94 @@ import re
 #import pandas as pd
 #import plotly.graph_objs as go
 
-app = dash.Dash(name=__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-form_max_length = 256
+app = dash.Dash(
+    name=__name__,
+    suppress_callback_exceptions = True,
+    external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
 
 content = [
-    html.H3("USyd QBUS3850 Forecast Competition"),
-    html.P(),
-    html.P("Forecasts are to be submitted on Fridays between 00:00 and 23:59."),
-    html.P("Current time: {}".format(datetime.now().strftime(format="%c"))),
-    dbc.FormGroup(
-        [
-            dbc.Label("Name", html_for="input-name"),
-            dbc.Input(
-                id="input-name",
-                placeholder="Enter name",
-                maxLength=form_max_length,
-            ),
-            dbc.FormText("Allowed characters: A-Za-z',-<space>"),
-        ]
+    html.Div(
+        html.H2("USyd QBUS3850 Forecast Competition"),
+        style={'padding': 50},
     ),
-    dbc.FormGroup(
-        [
-            dbc.Label("Student No", html_for="input-snumber"),
-            dbc.Input(
-                id="input-snumber",
-                placeholder="Enter student no",
-                maxLength=form_max_length,
-            ),
-            dbc.FormText("Nine numeric digits, no spaces"),
-        ]
-    ),
-    dbc.FormGroup(
-        [
-            dbc.Label("Forecasts", html_for="input-forecasts"),
-            dbc.Input(
-                id="input-forecasts",
-                placeholder="Enter forecasts",
-                maxLength=form_max_length,
-            ),
-            dbc.FormText("Seven floating point numbers, comma-separated"),
-        ]
-    ),
-    dbc.Button(
-        "Submit",
-        id="submit-button"
-    ),
-    html.P(
-        id="submit-feedback"
-    ),
-    html.P(
-        id="submit-echo"
-    ),
+    dcc.Interval(id="timer", interval=1000, n_intervals=0),
+    html.Div(id="submit-form")
 ]
+    
+@app.callback(
+    Output("submit-form", "children"),
+    [
+        Input("timer", "n_intervals")
+    ]
+)
+def update_current_time(n):
+    now = datetime.now()
+    now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
+    
+    submission_day = "Sat"
 
+    form_suspended = [
+        dbc.Jumbotron(
+            [
+                html.H4("Current time: {}".format(now_str)),
+                html.H4("Submission times: each {}, 00:00:00 to 23:59:59.".format(submission_day)),
+            ]
+        )
+    ]
+
+    form_max_length = 256
+    form_active = form_suspended + [
+        dbc.FormGroup(
+            [
+                dbc.Label("Name", html_for="input-name"),
+                dbc.Input(
+                    id="input-name",
+                    placeholder="Enter name",
+                    maxLength=form_max_length,
+                ),
+                dbc.FormText("Allowed characters: A-Za-z',-<space>"),
+            ]
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label("Student No", html_for="input-snumber"),
+                dbc.Input(
+                    id="input-snumber",
+                    placeholder="Enter student no",
+                    maxLength=form_max_length,
+                ),
+                dbc.FormText("Nine numeric digits, no spaces"),
+            ]
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label("Forecasts", html_for="input-forecasts"),
+                dbc.Input(
+                    id="input-forecasts",
+                    placeholder="Enter forecasts",
+                    maxLength=form_max_length,
+                ),
+                dbc.FormText("Seven floating point numbers, comma-separated"),
+            ]
+        ),
+        dbc.Button(
+            "Submit",
+            id="submit-button"
+        ),
+        html.P(
+            id="submit-feedback"
+        ),
+        html.P(
+            id="submit-echo"
+        ),
+    ]
+
+    if now.strftime("%a") == submission_day:
+        return form_active
+    return form_suspended
+
+    
 def err_tuple(msg):
     return False, False, False, msg, ""
 
@@ -105,10 +139,6 @@ def update_output(n_clicks, name, snumber, forecasts):
     if not forecasts:
         msg = "Required: Forecasts"
         return err_tuple(msg)
-
-    name = name[0:form_max_length]
-    snumber = snumber[0:form_max_length]
-    forecasts = forecasts[0:form_max_length]
 
     if not re.match("[-,\ \'A-Za-z]+$", name):
         msg = "Allowed characters for name: A-Za-z',-<space>."
@@ -158,7 +188,6 @@ app.layout = html.Div(
             )       
         ]
     ),
-    style={'padding': 60},
 )
         
 if __name__ == "__main__":
