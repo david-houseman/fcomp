@@ -15,9 +15,10 @@ app = dash.Dash(name=__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 form_max_length = 256
 
 content = [
-    html.H3("USyd Business Analytics Forecast Competition"),
-    html.P("Current time: {}".format(datetime.now().strftime(format="%c"))),
+    html.H3("USyd QBUS3850 Forecast Competition"),
+    html.P(),
     html.P("Forecasts are to be submitted on Fridays between 00:00 and 23:59."),
+    html.P("Current time: {}".format(datetime.now().strftime(format="%c"))),
     dbc.FormGroup(
         [
             dbc.Label("Name", html_for="input-name"),
@@ -157,7 +158,7 @@ app.layout = html.Div(
             )       
         ]
     ),
-    style={'padding':10},
+    style={'padding': 60},
 )
         
 if __name__ == "__main__":
