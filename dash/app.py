@@ -4,7 +4,6 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
-
 #import numpy as np
 #import pandas as pd
 #import plotly.graph_objs as go
@@ -17,7 +16,6 @@ submission_day = "Sat"
 
 app = dash.Dash(
     name=__name__,
-#    suppress_callback_exceptions = True,
     external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
 
@@ -28,6 +26,7 @@ content = [
         html.H2("USyd QBUS3850 Forecast Competition"),
         style={'padding': 50},
     ),
+    html.Hr(),
     html.P(
         "Submission times: each {}, 00:00:00 to 23:59:59.".format(
             submission_day,
@@ -74,9 +73,10 @@ content = [
         [
             html.Div(
                 id="submit-feedback",
-            )
+            ),
         ]
-    )
+    ),
+    html.Hr(),
 ]
 
 
