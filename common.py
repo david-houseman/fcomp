@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta 
 
-submission_day = "Fri"
-competition_start = datetime(2020, 5, 15)
+submission_day = "Sat"
+competition_start = datetime(2020, 10, 3)
 competition_length = 13
 
 def competition_schedule():

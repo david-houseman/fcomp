@@ -5,11 +5,11 @@ import datetime
 from fnmatch import fnmatch
 import os
 
-from common import competition_schedule
+from common import competition_schedule, submission_day
 from util import is_sorted
 
-data_dir = "../data/aemo/"
-forecast_dir = "../data/forecasts/"
+data_dir = "data/aemo/"
+forecasts_file = "data/submissions.csv"
 
 its = pd.DataFrame()
 
@@ -38,22 +38,29 @@ y = ts["TOTALDEMAND"]
 
 print(y.tail(15))
 
-for today in competition_schedule():
-    j = y.index.get_loc(today)
-    assert(y[j] == y[today])
-    
-    fcasts = y[j + 1: j + 8]
+with open("data/actuals.csv", "w") as file:
+    for j in range(len(y)):
+        today = y.index[j]
+        if not today.strftime("%a") == submission_day:
+            continue
 
-    ## Format output
-    date_str = today.strftime(format="%Y-%m-%d")
-    time_str = today.strftime(format="%H:%M:%S")
-    snumber = "000000000"
-    name = "Oracle"
-    method = "M"
+        if j + 8 >= len(y):
+            break
 
-    record = (
-        [date_str, time_str, snumber, name, method] +
-        [str(int(f)) for f in fcasts]
-    )
-    print( "|".join(record) + "\n" )
+        fcasts = y[j + 1: j + 8]
+
+        ## Format output
+        date_str = today.strftime(format="%Y-%m-%d")
+        time_str = today.strftime(format="%H:%M:%S")
+        snumber = "000000000"
+        name = "Oracle"
+        method = "M"
+
+        record = (
+            [date_str, time_str, snumber, name, method] +
+            [str(int(f)) for f in fcasts]
+        )
+        file.write("|".join(record) + "\n")
+
+
     

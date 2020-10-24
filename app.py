@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import re
 import os
 
-submission_day = "Sat"
+from common import submission_day
 
 app = dash.Dash(
     name=__name__,
@@ -172,7 +172,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         html.P(" | ".join(record)),
     ]
 
-    f = open("../data/submissions.csv", "a")
+    f = open("data/submissions.csv", "a")
     f.write("|".join(record) + "\n")
     f.close()
     
