@@ -5,10 +5,12 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
 from datetime import datetime
-import re
 #import numpy as np
 #import pandas as pd
 #import plotly.graph_objs as go
+
+import re
+import os
 
 submission_day = "Sat"
 
@@ -102,18 +104,18 @@ def suspended_tuple(msg):
 def update_form(n_clicks, n_intervals, name, snumber, forecasts):
 
     now = datetime.now()
-    now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
 
     if not now.strftime("%a") == submission_day:
+        now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
         msg = [
-            html.P("Submissions are not currently accepted."),
-            html.P("Submission times: {} between 00:00 and 23:59.".format(submission_day)),
+            html.P("Submissions are not accepted now."),
+            html.P("Submission times: each {}, 00:00 to 23:59.".format(submission_day)),
             html.P("Current time is {}.".format(now_str)),
         ]
         return suspended_tuple(msg)
    
     if not n_clicks:
-        msg = ""
+        msg = "Submissions are accepted now."
         return enabled_tuple(msg)
     
     if not name:
@@ -153,6 +155,7 @@ def update_form(n_clicks, n_intervals, name, snumber, forecasts):
             msg = "Failed to parse forecast {} as float.".format(s)
             return enabled_tuple(msg)
 
+    now_str = now.strftime(format="%Y-%m-%d | %H:%M:%S")
     record = " | ".join([now_str, snumber, name] + [str(f) for f in fcasts])
     
     msg = [
