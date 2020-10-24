@@ -73,11 +73,11 @@ content = [
     )
 ]
     
-def err_tuple(msg):
-    return False, False, False, msg
+def enabled_tuple(msg):
+    return False, False, False, False, False, msg
 
-def ok_tuple(msg):
-    return True, True, True, msg
+def suspended_tuple(msg):
+    return True, True, True, True, True, msg
 
 
 @app.callback(
@@ -85,6 +85,8 @@ def ok_tuple(msg):
         Output("input-name", "disabled"),
         Output("input-snumber", "disabled"),
         Output("input-forecasts", "disabled"),
+        Output("timer", "disabled"),
+        Output("submit-button", "disabled"),
         Output("submit-feedback", "children"),
     ],
     [
@@ -97,7 +99,7 @@ def ok_tuple(msg):
         State("input-forecasts", "value"),
     ]
 )
-def update_output(n_clicks, n_intervals, name, snumber, forecasts):
+def update_form(n_clicks, n_intervals, name, snumber, forecasts):
 
     now = datetime.now()
     now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
@@ -108,40 +110,40 @@ def update_output(n_clicks, n_intervals, name, snumber, forecasts):
             html.P("Submission times: {} between 00:00 and 23:59.".format(submission_day)),
             html.P("Current time is {}.".format(now_str)),
         ]
-        return ok_tuple(msg)
+        return suspended_tuple(msg)
    
     if not n_clicks:
         msg = ""
-        return err_tuple(msg)
+        return enabled_tuple(msg)
     
     if not name:
         msg = "Required: Name"
-        return err_tuple(msg)
+        return enabled_tuple(msg)
         
     if not snumber:
         msg = "Required: Student No"
-        return err_tuple(msg)
+        return enabled_tuple(msg)
 
     if not forecasts:
         msg = "Required: Forecasts"
-        return err_tuple(msg)
+        return enabled_tuple(msg)
 
     if not re.match("[-,\ \'A-Za-z]+$", name):
         msg = "Allowed characters for name: A-Za-z',-<space>."
-        return err_tuple(msg)
+        return enabled_tuple(msg)
     
     if not re.match("[0-9]{9}$", snumber):
         msg = "Student No must be 9 digits, with no spaces."
-        return err_tuple(msg)
+        return enabled_tuple(msg)
         
     fstrs = forecasts.split(",")
     nf = len(fstrs)
     if nf < 7:
         msg = "Too few forecasts: Expected 7, received {}.".format(nf)
-        return err_tuple(msg)
+        return enabled_tuple(msg)
     if nf > 7:
         msg = "Too many forecasts: Expected 7, received {}.".format(nf)
-        return err_tuple(msg)
+        return enabled_tuple(msg)
 
     fcasts = []
     for s in fstrs:
@@ -149,16 +151,15 @@ def update_output(n_clicks, n_intervals, name, snumber, forecasts):
             fcasts.append(float(s))
         except ValueError:
             msg = "Failed to parse forecast {} as float.".format(s)
-            return err_tuple(msg)
+            return enabled_tuple(msg)
 
-    date = now.strftime("%Y-%m-%d")
-    record = " | ".join([date, snumber, name] + [str(f) for f in fcasts])
+    record = " | ".join([now_str, snumber, name] + [str(f) for f in fcasts])
     
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(record),
     ]
-    return ok_tuple(msg)
+    return suspended_tuple(msg)
     
 
 app.layout = html.Div(
