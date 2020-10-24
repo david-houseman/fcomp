@@ -155,13 +155,20 @@ def update_form(n_clicks, n_intervals, name, snumber, forecasts):
             msg = "Failed to parse forecast {} as float.".format(s)
             return enabled_tuple(msg)
 
-    now_str = now.strftime(format="%Y-%m-%d | %H:%M:%S")
-    record = " | ".join([now_str, snumber, name] + [str(f) for f in fcasts])
+    date_str = now.strftime(format="%Y-%m-%d")
+    time_str = now.strftime(format="%H:%M:%S")
+    method = "M"
+    record = [date_str, time_str, snumber, name, method] + [str(f) for f in fcasts]
     
     msg = [
         html.P("Thank you for submitting your forecasts:"),
-        html.P(record),
+        html.P(" | ".join(record)),
     ]
+
+    f = open("../data/submissions.csv", "a")
+    f.write("|".join(record) + "\n")
+    f.close()
+    
     return suspended_tuple(msg)
     
 
