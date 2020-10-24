@@ -10,11 +10,15 @@ import re
 #import pandas as pd
 #import plotly.graph_objs as go
 
+submission_day = "Sat"
+
 app = dash.Dash(
     name=__name__,
-    suppress_callback_exceptions = True,
+#    suppress_callback_exceptions = True,
     external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
+
+form_max_length = 256
 
 content = [
     html.Div(
@@ -22,87 +26,58 @@ content = [
         style={'padding': 50},
     ),
     dcc.Interval(id="timer", interval=1000, n_intervals=0),
-    html.Div(id="submit-form")
+    html.P("Submission times: each {}, 00:00:00 to 23:59:59.".format(submission_day)),
+    dbc.FormGroup(
+        [
+            dbc.Label("Name", html_for="input-name"),
+            dbc.Input(
+                id="input-name",
+                placeholder="Enter name",
+                maxLength=form_max_length,
+            ),
+            dbc.FormText("Allowed characters: A-Za-z',-<space>"),
+        ]
+    ),
+    dbc.FormGroup(
+        [
+            dbc.Label("Student No", html_for="input-snumber"),
+            dbc.Input(
+                id="input-snumber",
+                placeholder="Enter student no",
+                maxLength=form_max_length,
+            ),
+            dbc.FormText("Nine numeric digits, no spaces"),
+        ]
+    ),
+    dbc.FormGroup(
+        [
+            dbc.Label("Forecasts", html_for="input-forecasts"),
+            dbc.Input(
+                id="input-forecasts",
+                placeholder="Enter forecasts",
+                maxLength=form_max_length,
+            ),
+            dbc.FormText("Seven floating point numbers, comma-separated"),
+        ]
+    ),
+    dbc.Button(
+        "Submit",
+        id="submit-button"
+    ),
+    dbc.Jumbotron(
+        [
+            html.Div(
+                id="submit-feedback",
+            )
+        ]
+    )
 ]
     
-@app.callback(
-    Output("submit-form", "children"),
-    [
-        Input("timer", "n_intervals")
-    ]
-)
-def update_current_time(n):
-    now = datetime.now()
-    now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
-    
-    submission_day = "Sat"
-
-    form_suspended = [
-        dbc.Jumbotron(
-            [
-                html.H4("Current time: {}".format(now_str)),
-                html.H4("Submission times: each {}, 00:00:00 to 23:59:59.".format(submission_day)),
-            ]
-        )
-    ]
-
-    form_max_length = 256
-    form_active = form_suspended + [
-        dbc.FormGroup(
-            [
-                dbc.Label("Name", html_for="input-name"),
-                dbc.Input(
-                    id="input-name",
-                    placeholder="Enter name",
-                    maxLength=form_max_length,
-                ),
-                dbc.FormText("Allowed characters: A-Za-z',-<space>"),
-            ]
-        ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Student No", html_for="input-snumber"),
-                dbc.Input(
-                    id="input-snumber",
-                    placeholder="Enter student no",
-                    maxLength=form_max_length,
-                ),
-                dbc.FormText("Nine numeric digits, no spaces"),
-            ]
-        ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Forecasts", html_for="input-forecasts"),
-                dbc.Input(
-                    id="input-forecasts",
-                    placeholder="Enter forecasts",
-                    maxLength=form_max_length,
-                ),
-                dbc.FormText("Seven floating point numbers, comma-separated"),
-            ]
-        ),
-        dbc.Button(
-            "Submit",
-            id="submit-button"
-        ),
-        html.P(
-            id="submit-feedback"
-        ),
-        html.P(
-            id="submit-echo"
-        ),
-    ]
-
-    if now.strftime("%a") == submission_day:
-        return form_active
-    return form_suspended
-
-    
 def err_tuple(msg):
-    return False, False, False, msg, ""
+    return False, False, False, msg
 
-def ok_tuple(msg, echo):
-    return True, True, True, msg, echo
+def ok_tuple(msg):
+    return True, True, True, msg
 
 
 @app.callback(
@@ -111,10 +86,10 @@ def ok_tuple(msg, echo):
         Output("input-snumber", "disabled"),
         Output("input-forecasts", "disabled"),
         Output("submit-feedback", "children"),
-        Output("submit-echo", "children"),
     ],
     [
         Input("submit-button", "n_clicks"),
+        Input("timer", "n_intervals"),
     ],
     [
         State("input-name", "value"),
@@ -122,12 +97,23 @@ def ok_tuple(msg, echo):
         State("input-forecasts", "value"),
     ]
 )
-def update_output(n_clicks, name, snumber, forecasts):
+def update_output(n_clicks, n_intervals, name, snumber, forecasts):
 
+    now = datetime.now()
+    now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
+
+    if not now.strftime("%a") == submission_day:
+        msg = [
+            html.P("Submissions are not currently accepted."),
+            html.P("Submission times: {} between 00:00 and 23:59.".format(submission_day)),
+            html.P("Current time is {}.".format(now_str)),
+        ]
+        return ok_tuple(msg)
+   
     if not n_clicks:
         msg = ""
         return err_tuple(msg)
-
+    
     if not name:
         msg = "Required: Name"
         return err_tuple(msg)
@@ -165,15 +151,14 @@ def update_output(n_clicks, name, snumber, forecasts):
             msg = "Failed to parse forecast {} as float.".format(s)
             return err_tuple(msg)
 
-    now = datetime.now()
-    if not now.strftime("%a") == "Fri":
-        msg = "Forecasts are to be submitted on Fridays between 00:00 and 23:59."
-        return err_tuple(msg)
-    
-    msg = "Thank you for submitting your forecasts:"
     date = now.strftime("%Y-%m-%d")
     record = " | ".join([date, snumber, name] + [str(f) for f in fcasts])
-    return ok_tuple(msg, record)
+    
+    msg = [
+        html.P("Thank you for submitting your forecasts:"),
+        html.P(record),
+    ]
+    return ok_tuple(msg)
     
 
 app.layout = html.Div(
