@@ -4,11 +4,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
-from datetime import datetime
+
 #import numpy as np
 #import pandas as pd
 #import plotly.graph_objs as go
 
+from datetime import datetime, timedelta 
 import re
 import os
 
@@ -27,8 +28,11 @@ content = [
         html.H2("USyd QBUS3850 Forecast Competition"),
         style={'padding': 50},
     ),
-    dcc.Interval(id="timer", interval=1000, n_intervals=0),
-    html.P("Submission times: each {}, 00:00:00 to 23:59:59.".format(submission_day)),
+    html.P(
+        "Submission times: each {}, 00:00:00 to 23:59:59.".format(
+            submission_day,
+        )
+    ),
     dbc.FormGroup(
         [
             dbc.Label("Name", html_for="input-name"),
@@ -74,12 +78,13 @@ content = [
         ]
     )
 ]
-    
+
+
 def enabled_tuple(msg):
-    return False, False, False, False, False, msg
+    return False, False, False, False, msg
 
 def suspended_tuple(msg):
-    return True, True, True, True, True, msg
+    return True, True, True, True, msg
 
 
 @app.callback(
@@ -87,13 +92,11 @@ def suspended_tuple(msg):
         Output("input-name", "disabled"),
         Output("input-snumber", "disabled"),
         Output("input-forecasts", "disabled"),
-        Output("timer", "disabled"),
         Output("submit-button", "disabled"),
         Output("submit-feedback", "children"),
     ],
     [
         Input("submit-button", "n_clicks"),
-        Input("timer", "n_intervals"),
     ],
     [
         State("input-name", "value"),
@@ -101,7 +104,7 @@ def suspended_tuple(msg):
         State("input-forecasts", "value"),
     ]
 )
-def update_form(n_clicks, n_intervals, name, snumber, forecasts):
+def update_form(n_clicks, name, snumber, forecasts):
 
     now = datetime.now()
 
@@ -109,13 +112,17 @@ def update_form(n_clicks, n_intervals, name, snumber, forecasts):
         now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
         msg = [
             html.P("Submissions are not accepted now."),
-            html.P("Submission times: each {}, 00:00 to 23:59.".format(submission_day)),
+            html.P(
+                "Submission times: each {}, 00:00:00 to 23:59:59.".format(
+                    submission_day,
+                )
+            ),
             html.P("Current time is {}.".format(now_str)),
         ]
         return suspended_tuple(msg)
    
     if not n_clicks:
-        msg = "Submissions are accepted now."
+        msg = "Submissions are accepted today until 23:59:59."
         return enabled_tuple(msg)
     
     if not name:
