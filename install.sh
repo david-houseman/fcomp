@@ -1,6 +1,6 @@
 #!/bin/sh
 
-for req in */requirements-dpkg.txt
+for req in requirements-dpkg.txt */requirements-dpkg.txt
 do
     cat "$req" | xargs apt-get -y --no-install-recommends install
 done
