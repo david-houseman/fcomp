@@ -17,56 +17,48 @@ submission_day = "Sun"
 submission_start = time(9, 0, 0)
 submission_end = time(17, 0, 0)
 
-form_max_length = 256
 
-server = flask.Flask(__name__)
-app = dash.Dash(
-    name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
-)
-
-content = [
-    html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}),
-    html.Hr(),
-    html.P(
-        "Submission times: each {}, {} to {}.".format(
-            submission_day, submission_start, submission_end
-        )
-    ),
-    dbc.FormGroup(
-        [
-            dbc.Label("Name", html_for="input-name"),
-            dbc.Input(
-                id="input-name", placeholder="Enter name", maxLength=form_max_length
-            ),
-            dbc.FormText("Allowed characters: A-Za-z',-<space>"),
-        ]
-    ),
-    dbc.FormGroup(
-        [
-            dbc.Label("Student No", html_for="input-snumber"),
-            dbc.Input(
-                id="input-snumber",
-                placeholder="Enter student no",
-                maxLength=form_max_length,
-            ),
-            dbc.FormText("Nine numeric digits, no spaces"),
-        ]
-    ),
-    dbc.FormGroup(
-        [
-            dbc.Label("Forecasts", html_for="input-forecasts"),
-            dbc.Input(
-                id="input-forecasts",
-                placeholder="Enter forecasts",
-                maxLength=form_max_length,
-            ),
-            dbc.FormText("Seven floating point numbers, comma-separated"),
-        ]
-    ),
-    dbc.Button("Submit", id="submit-button"),
-    dbc.Jumbotron([html.Div(id="submit-feedback")]),
-    html.Hr(),
-]
+def content():
+    maxlen = 256
+    return [
+        html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}),
+        html.Hr(),
+        html.P(
+            "Submission times: each {}, {} to {}.".format(
+                submission_day, submission_start, submission_end
+            )
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label("Name", html_for="input-name"),
+                dbc.Input(id="input-name", placeholder="Enter name", maxLength=maxlen),
+                dbc.FormText("Allowed characters: A-Za-z',-<space>"),
+            ]
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label("Student No", html_for="input-snumber"),
+                dbc.Input(
+                    id="input-snumber", placeholder="Enter student no", maxLength=maxlen
+                ),
+                dbc.FormText("Nine numeric digits, no spaces"),
+            ]
+        ),
+        dbc.FormGroup(
+            [
+                dbc.Label("Forecasts", html_for="input-forecasts"),
+                dbc.Input(
+                    id="input-forecasts",
+                    placeholder="Enter forecasts",
+                    maxLength=maxlen,
+                ),
+                dbc.FormText("Seven floating point numbers, comma-separated"),
+            ]
+        ),
+        dbc.Button("Submit", id="submit-button"),
+        dbc.Jumbotron([html.Div(id="submit-feedback")]),
+        html.Hr(),
+    ]
 
 
 def enabled_tuple(msg):
@@ -171,7 +163,11 @@ def update_form(n_clicks, name, snumber, forecasts):
     return suspended_tuple(msg)
 
 
-app.layout = html.Div(dbc.Container([dbc.Row([dbc.Col(content)])]))
+server = flask.Flask(__name__)
+app = dash.Dash(
+    name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
+app.layout = html.Div(dbc.Container([dbc.Row([dbc.Col(content())])]))
 
 if __name__ == "__main__":
     app.run_server(debug=True)
