@@ -8,11 +8,13 @@ from dash.dependencies import Input, Output, State
 #import pandas as pd
 #import plotly.graph_objs as go
 
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta, date, time
 import re
 import os
 
-from common import submission_day
+submission_day = "Sun"
+submission_start = time(9, 0, 0)
+submission_end = time(17, 0, 0)
 
 app = dash.Dash(
     name=__name__,
@@ -28,8 +30,10 @@ content = [
     ),
     html.Hr(),
     html.P(
-        "Submission times: each {}, 00:00:00 to 23:59:59.".format(
+        "Submission times: each {}, {} to {}.".format(
             submission_day,
+            submission_start,
+            submission_end,
         )
     ),
     dbc.FormGroup(
@@ -108,13 +112,19 @@ def update_form(n_clicks, name, snumber, forecasts):
 
     now = datetime.now()
 
-    if not now.strftime("%a") == submission_day:
+    if(
+        now.strftime("%a") != submission_day or
+        now.time() < submission_start or
+        now.time() > submission_end
+    ):           
         now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
         msg = [
             html.P("Submissions are not accepted now."),
             html.P(
-                "Submission times: each {}, 00:00:00 to 23:59:59.".format(
+                "Submission times: each {}, {} to {}.".format(
                     submission_day,
+                    submission_start,
+                    submission_end,
                 )
             ),
             html.P("Current time is {}.".format(now_str)),
@@ -122,7 +132,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         return suspended_tuple(msg)
    
     if not n_clicks:
-        msg = "Submissions are accepted today until 23:59:59."
+        msg = "Submissions are accepted today until {}.".format(submission_end)
         return enabled_tuple(msg)
     
     if not name:
