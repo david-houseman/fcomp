@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/root/fcomp/dash/
-ExecStart=gunicorn3 -w 4 app:server
+ExecStart=gunicorn3 -b 0.0.0.0:80 -w 4 app:server
 Restart=always
 
 [Install]
