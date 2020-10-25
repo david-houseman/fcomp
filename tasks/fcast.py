@@ -10,11 +10,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from util import is_sorted
 
-submission_day = "Fri"
-aemo_dir = "../data/aemo/"
-forecasts_file = "../data/forecasts.csv"
-
-def read_data():
+def read_data(aemo_dir):
     its = pd.DataFrame()
     for fname in sorted(os.listdir(aemo_dir)):
         file = os.path.join(aemo_dir, fname)
@@ -73,26 +69,31 @@ def write_fcast(f, now, snumber, name, fcasts):
     record = [date_str, time_str, snumber, name, method] + [
         str(round(f,0)) for f in fcasts
     ]
+    print("|".join(record))
     f.write("|".join(record) + "\n")
 
-    
-def main(): 
-    now = dt.datetime.now()
-    y = read_data()
 
-    with open(forecasts_file, "w") as f:    
-        if now.strftime("%a") == submission_day:
+# If today is submission_day, generate benchmark forecasts.
+# If today is not submission_day, generate actuals.
+def fcast(submission_day, aemo_dir, fcast_file): 
+    now = dt.datetime.now()
+    y = read_data(aemo_dir)
+
+    if now.strftime("%a") == submission_day:
+        with open(fcast_file, "w") as f:    
             write_fcast(f, now, "000000100", "Seasonal RW", fcast_seasonalrw(y))
             write_fcast(f, now, "000000101", "SES", fcast_ses(y))
             write_fcast(f, now, "000000102", "SARIMA", fcast_sarima(y))
             return
 
-        for j in range(len(y) - 13, len(y) - 7):
-            now = dt.datetime.combine(y.index[j], dt.time())
-            if now.strftime("%a") == submission_day:
-                break
+    for j in range(len(y) - 13, len(y) - 7):
+        now = dt.datetime.combine(y.index[j], dt.time())
+        if now.strftime("%a") == submission_day:
+            break
+
+    with open(fcast_file, "w") as f:        
         write_fcast(f, now, "000000000", "Actual", y[j + 1 : j + 8])
 
     
 if __name__ == "__main__":
-    main()
+    fcast("Fri", "../data/aemo/", "../data/forecasts.csv")
