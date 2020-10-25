@@ -2,12 +2,12 @@
 
 for req in */requirements-dpkg.txt
 do
-    cat req | xargs apt-get -y --no-install-recommends install req
+    cat "$req" | xargs apt-get -y --no-install-recommends install
 done
 
 for req in */requirements-py.txt
 do
-    pip3 install -r req
+    pip3 install -r "$req"
 done
 
 cp /usr/share/zoneinfo/Australia/Sydney /etc/localtime
