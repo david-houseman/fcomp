@@ -8,14 +8,15 @@ import os
 from common import competition_schedule, submission_day
 from util import is_sorted
 
-data_dir = "data/aemo/"
-forecasts_file = "data/submissions.csv"
+aemo_dir = "../data/aemo/"
+forecasts_file = "../data/submissions.csv"
+actuals_file = "../data/actuals.csv"
 
 its = pd.DataFrame()
 
-print("Reading files in ", data_dir)
-for fname in sorted(os.listdir(data_dir)):
-    file = os.path.join(data_dir, fname)
+print("Reading files in ", aemo_dir)
+for fname in sorted(os.listdir(aemo_dir)):
+    file = os.path.join(aemo_dir, fname)
     if not fnmatch(file, "*.csv"):
         continue
 
@@ -35,7 +36,7 @@ y = ts["TOTALDEMAND"]
 
 print(y.tail(15))
 
-with open("data/actuals.csv", "w") as file:
+with open(actuals_file, "w") as file:
     for j in range(len(y)):
         today = y.index[j]
         if not today.strftime("%a") == submission_day:

@@ -160,7 +160,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         html.P(" | ".join(record)),
     ]
 
-    f = open("data/submissions.csv", "a")
+    f = open("../data/submissions.csv", "a")
     f.write("|".join(record) + "\n")
     f.close()
 
