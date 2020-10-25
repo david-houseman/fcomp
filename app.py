@@ -4,9 +4,9 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
-#import numpy as np
-#import pandas as pd
-#import plotly.graph_objs as go
+# import numpy as np
+# import pandas as pd
+# import plotly.graph_objs as go
 
 from datetime import datetime, timedelta, date, time
 import re
@@ -16,33 +16,23 @@ submission_day = "Sun"
 submission_start = time(9, 0, 0)
 submission_end = time(17, 0, 0)
 
-app = dash.Dash(
-    name=__name__,
-    external_stylesheets=[dbc.themes.BOOTSTRAP]
-)
+app = dash.Dash(name=__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 form_max_length = 256
 
 content = [
-    html.Div(
-        html.H2("USyd QBUS3850 Forecast Competition"),
-        style={'padding': 50},
-    ),
+    html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}),
     html.Hr(),
     html.P(
         "Submission times: each {}, {} to {}.".format(
-            submission_day,
-            submission_start,
-            submission_end,
+            submission_day, submission_start, submission_end
         )
     ),
     dbc.FormGroup(
         [
             dbc.Label("Name", html_for="input-name"),
             dbc.Input(
-                id="input-name",
-                placeholder="Enter name",
-                maxLength=form_max_length,
+                id="input-name", placeholder="Enter name", maxLength=form_max_length
             ),
             dbc.FormText("Allowed characters: A-Za-z',-<space>"),
         ]
@@ -69,23 +59,15 @@ content = [
             dbc.FormText("Seven floating point numbers, comma-separated"),
         ]
     ),
-    dbc.Button(
-        "Submit",
-        id="submit-button"
-    ),
-    dbc.Jumbotron(
-        [
-            html.Div(
-                id="submit-feedback",
-            ),
-        ]
-    ),
+    dbc.Button("Submit", id="submit-button"),
+    dbc.Jumbotron([html.Div(id="submit-feedback")]),
     html.Hr(),
 ]
 
 
 def enabled_tuple(msg):
     return False, False, False, False, msg
+
 
 def suspended_tuple(msg):
     return True, True, True, True, msg
@@ -99,46 +81,42 @@ def suspended_tuple(msg):
         Output("submit-button", "disabled"),
         Output("submit-feedback", "children"),
     ],
-    [
-        Input("submit-button", "n_clicks"),
-    ],
+    [Input("submit-button", "n_clicks")],
     [
         State("input-name", "value"),
         State("input-snumber", "value"),
         State("input-forecasts", "value"),
-    ]
+    ],
 )
 def update_form(n_clicks, name, snumber, forecasts):
 
     now = datetime.now()
 
-    if(
-        now.strftime("%a") != submission_day or
-        now.time() < submission_start or
-        now.time() > submission_end
-    ):           
+    if (
+        now.strftime("%a") != submission_day
+        or now.time() < submission_start
+        or now.time() > submission_end
+    ):
         now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
         msg = [
             html.P("Submissions are not accepted now."),
             html.P(
                 "Submission times: each {}, {} to {}.".format(
-                    submission_day,
-                    submission_start,
-                    submission_end,
+                    submission_day, submission_start, submission_end
                 )
             ),
             html.P("Current time is {}.".format(now_str)),
         ]
         return suspended_tuple(msg)
-   
+
     if not n_clicks:
         msg = "Submissions are accepted today until {}.".format(submission_end)
         return enabled_tuple(msg)
-    
+
     if not name:
         msg = "Required: Name"
         return enabled_tuple(msg)
-        
+
     if not snumber:
         msg = "Required: Student No"
         return enabled_tuple(msg)
@@ -147,14 +125,14 @@ def update_form(n_clicks, name, snumber, forecasts):
         msg = "Required: Forecasts"
         return enabled_tuple(msg)
 
-    if not re.match("[-,\ \'A-Za-z]+$", name):
+    if not re.match("[-,\ 'A-Za-z]+$", name):
         msg = "Allowed characters for name: A-Za-z',-<space>."
         return enabled_tuple(msg)
-    
+
     if not re.match("[0-9]{9}$", snumber):
         msg = "Student No must be 9 digits, with no spaces."
         return enabled_tuple(msg)
-        
+
     fstrs = forecasts.split(",")
     nf = len(fstrs)
     if nf < 7:
@@ -176,7 +154,7 @@ def update_form(n_clicks, name, snumber, forecasts):
     time_str = now.strftime(format="%H:%M:%S")
     method = "M"
     record = [date_str, time_str, snumber, name, method] + [str(f) for f in fcasts]
-    
+
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(" | ".join(record)),
@@ -185,23 +163,11 @@ def update_form(n_clicks, name, snumber, forecasts):
     f = open("data/submissions.csv", "a")
     f.write("|".join(record) + "\n")
     f.close()
-    
-    return suspended_tuple(msg)
-    
 
-app.layout = html.Div(
-    dbc.Container(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        content
-                    )
-                ]
-            )       
-        ]
-    ),
-)
-        
+    return suspended_tuple(msg)
+
+
+app.layout = html.Div(dbc.Container([dbc.Row([dbc.Col(content)])]))
+
 if __name__ == "__main__":
     app.run_server(debug=True)
