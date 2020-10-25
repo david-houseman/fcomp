@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, date, time
 import re
 import os
 
-submission_day = "Sun"
+submission_day = "Fri"
 submission_start = time(9, 0, 0)
 submission_end = time(17, 0, 0)
 
@@ -50,7 +50,7 @@ def content():
         ),
         dbc.FormGroup(
             [
-                dbc.Label("Forecasts", html_for="input-forecasts"),
+                dbc.Label("Forecasts for Sat - Fri", html_for="input-forecasts"),
                 dbc.Input(
                     id="input-forecasts",
                     placeholder="Enter forecasts",
