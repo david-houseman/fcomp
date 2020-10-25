@@ -17,6 +17,10 @@ submission_day = "Sun"
 submission_start = time(9, 0, 0)
 submission_end = time(17, 0, 0)
 
+server = flask.Flask(__name__)
+app = dash.Dash(
+    name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
 
 def content():
     maxlen = 256
@@ -163,10 +167,6 @@ def update_form(n_clicks, name, snumber, forecasts):
     return suspended_tuple(msg)
 
 
-server = flask.Flask(__name__)
-app = dash.Dash(
-    name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
-)
 app.layout = html.Div(dbc.Container([dbc.Row([dbc.Col(content())])]))
 
 if __name__ == "__main__":
