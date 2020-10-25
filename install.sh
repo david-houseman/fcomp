@@ -12,5 +12,3 @@ done
 
 cp /usr/share/zoneinfo/Australia/Sydney /etc/localtime
 echo "Australia/Sydney" > /etc/timezone
-
-cp dash/gunicorn.service /etc/systemd/system/
