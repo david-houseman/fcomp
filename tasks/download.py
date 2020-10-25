@@ -28,5 +28,6 @@ def download(yyyymm):
         f.write(r.content)
 
 
-for yyyymm in fetches():
-    download(yyyymm)
+if __name__ == "__main__":
+    for yyyymm in fetches():
+        download(yyyymm)
