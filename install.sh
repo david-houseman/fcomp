@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cp gunicorn.service /etc/systemd/system/
+
 for req in */requirements-dpkg.txt
 do
     cat req | xargs apt-get -y --no-install-recommends install req

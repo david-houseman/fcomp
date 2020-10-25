@@ -1,3 +1,4 @@
+import flask
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -16,9 +17,12 @@ submission_day = "Sun"
 submission_start = time(9, 0, 0)
 submission_end = time(17, 0, 0)
 
-app = dash.Dash(name=__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
 form_max_length = 256
+
+server = flask.Flask(__name__)
+app = dash.Dash(
+    name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
 
 content = [
     html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}),

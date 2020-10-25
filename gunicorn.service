@@ -1,0 +1,12 @@
+[Unit]
+Description=gunicorn web application
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/fcomp/dash/
+ExecStart=gunicorn -w 4 app:server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
