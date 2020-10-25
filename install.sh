@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cp gunicorn.service /etc/systemd/system/
+cp dash/gunicorn.service /etc/systemd/system/
 
 for req in */requirements-dpkg.txt
 do
