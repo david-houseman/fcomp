@@ -141,7 +141,9 @@ def component_table():
         week_df["rmsfe"] = np.round(
             rmsfe( week_df[horizon_cols], actual_df[horizon_cols] ), 2
         )
-    
+
+        week_df = week_df.sort_values(by=["rmsfe"])
+        
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
@@ -171,8 +173,8 @@ def component_git_version():
     )
 
 
-def content():
-    return [
+def app_layout():
+    content = [
         component_title(),
         html.Hr(),
         component_submission_form(),
@@ -181,6 +183,7 @@ def content():
         html.Hr(),
         component_git_version(),
     ]
+    return html.Div(dbc.Container([dbc.Row([dbc.Col(content)])]))
 
 
 def enabled_tuple(msg):
@@ -285,7 +288,7 @@ def update_form(n_clicks, name, snumber, forecasts):
     return suspended_tuple(msg)
 
 
-app.layout = html.Div(dbc.Container([dbc.Row([dbc.Col(content())])]))
+app.layout = app_layout
 
 if __name__ == "__main__":
     app.run_server(debug=True)
