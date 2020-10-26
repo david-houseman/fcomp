@@ -22,32 +22,12 @@ app = dash.Dash(
     name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
 
-def component_git_version():
+def component_title():
+    return html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50})
 
-    git_shorthash = "Unknown"
-    git_time = "00:00"
-    git_author = "Unknown"
-
-    git_output = os.popen(
-        "git show --no-patch --format='%h%n%ai%n%an'"
-    ).read().splitlines()
-
-    if len(git_output) == 3:
-        git_shorthash = git_output[0]
-        git_time = git_output[1]
-        git_author = git_output[2]
-
-    return html.P(
-        "Version {} [{}] by {}".format(git_shorthash, git_time, git_author),
-        style={"color": "grey", "font-size": "small"},
-    )
-        
-
-def content():
+def component_submission_form():
     maxlen = 256
-    return [
-        html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}),
-        html.Hr(),
+    return html.Div([
         html.P(
             "Submission times: each {}, {} to {}.".format(
                 submission_day, submission_start, submission_end
@@ -82,10 +62,36 @@ def content():
         ),
         dbc.Button("Submit", id="submit-button"),
         dbc.Jumbotron([html.Div(id="submit-feedback")]),
+    ])
+
+def component_git_version():
+    git_shorthash = "Unknown"
+    git_time = "00:00"
+    git_author = "Unknown"
+
+    git_output = os.popen(
+        "git show --no-patch --format='%h%n%ai%n%an'"
+    ).read().splitlines()
+
+    if len(git_output) == 3:
+        git_shorthash = git_output[0]
+        git_time = git_output[1]
+        git_author = git_output[2]
+
+    return html.P(
+        "Version {} [{}] by {}".format(git_shorthash, git_time, git_author),
+        style={"color": "grey", "font-size": "small"},
+    )
+        
+
+def content():
+    return [
+        component_title(),
+        html.Hr(),
+        component_submission_form(),
         html.Hr(),
         component_git_version(),
     ]
-
 
 def enabled_tuple(msg):
     return False, False, False, False, msg
