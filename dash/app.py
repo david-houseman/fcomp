@@ -37,7 +37,10 @@ def component_git_version():
         git_time = git_output[1]
         git_author = git_output[2]
 
-    return html.P("{}: {} by {}".format(git_shorthash, git_time, git_author))
+    return html.P(
+        "Version {} [{}] by {}".format(git_shorthash, git_time, git_author),
+        style={"color": "grey", "font-size": "small"},
+    )
         
 
 def content():
