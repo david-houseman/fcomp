@@ -5,23 +5,41 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
-# import numpy as np
+import json
+
 # import pandas as pd
+# import numpy as np
 # import plotly.graph_objs as go
 
 from datetime import datetime, timedelta, date, time
 import re
 import os
 
-submission_day = "Fri"
-submission_start = time(9, 0, 0)
-submission_end = time(17, 0, 0)
-
 server = flask.Flask(__name__)
 app = dash.Dash(
     name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
 
+def read_config(config_path):
+    with open(config_path) as f:
+        config = json.load(f)
+
+    comp_start = datetime.strptime(config["competition_start"], "%Y-%m-%d")
+    comp_end = datetime.strptime(config["competition_end"], "%Y-%m-%d")
+    assert(comp_start.weekday() == comp_end.weekday())
+    assert(comp_start <= comp_end)
+    
+    sub_start = datetime.strptime(config["submission_start"], "%H:%M:%S").time()
+    sub_end = datetime.strptime(config["submission_end"], "%H:%M:%S").time()
+    assert(sub_start <= sub_end)
+    
+    return comp_start, comp_start, sub_start, sub_end
+
+
+# Set some globals. Not sure how else to pass these into the callbacks.
+comp_start, comp_end, sub_start, sub_end = read_config(
+    "../config/config.json"
+)
 
 def component_title():
     return html.Div(
@@ -31,11 +49,14 @@ def component_title():
 
 def component_submission_form():
     maxlen = 256
+    horizon_start = (comp_start + timedelta(days=1)).strftime("%a")
+    horizon_end = comp_start.strftime("%a")
+    
     return html.Div(
         [
             html.P(
                 "Submission times: each {}, {} to {}.".format(
-                    submission_day, submission_start, submission_end
+                    comp_start.strftime("%a"), sub_start, sub_end
                 )
             ),
             dbc.FormGroup(
@@ -60,7 +81,10 @@ def component_submission_form():
             ),
             dbc.FormGroup(
                 [
-                    dbc.Label("Forecasts for Sat - Fri", html_for="input-forecasts"),
+                    dbc.Label(
+                        "Forecasts for {} - {}".format(horizon_start, horizon_end),
+                        html_for="input-forecasts"
+                    ),
                     dbc.Input(
                         id="input-forecasts",
                         placeholder="Enter forecasts",
@@ -73,6 +97,10 @@ def component_submission_form():
             dbc.Jumbotron([html.Div(id="submit-feedback")]),
         ]
     )
+
+
+def component_table():
+    return html.Div([])
 
 
 def component_git_version():
@@ -133,16 +161,16 @@ def update_form(n_clicks, name, snumber, forecasts):
     now = datetime.now()
 
     if (
-        now.strftime("%a") != submission_day
-        or now.time() < submission_start
-        or now.time() > submission_end
+        now.weekday() != comp_start.weekday()
+        or now.time() < sub_start
+        or now.time() > sub_end
     ):
         now_str = now.strftime(format="%a %Y-%m-%d %H:%M:%S")
         msg = [
             html.P("Submissions are not accepted now."),
             html.P(
                 "Submission times: each {}, {} to {}.".format(
-                    submission_day, submission_start, submission_end
+                    comp_start.strftime("%a"), sub_start, sub_end
                 )
             ),
             html.P("Current time is {}.".format(now_str)),
@@ -150,7 +178,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         return suspended_tuple(msg)
 
     if not n_clicks:
-        msg = "Submissions are accepted today until {}.".format(submission_end)
+        msg = "Submissions are accepted today until {}.".format(sub_end)
         return enabled_tuple(msg)
 
     if not name:
