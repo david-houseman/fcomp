@@ -3,11 +3,12 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table as dtab
 from dash.dependencies import Input, Output, State
 
 import json
+import pandas as pd
 
-# import pandas as pd
 # import numpy as np
 # import plotly.graph_objs as go
 
@@ -20,26 +21,34 @@ app = dash.Dash(
     name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
 
+
 def read_config(config_path):
     with open(config_path) as f:
         config = json.load(f)
 
     comp_start = datetime.strptime(config["competition_start"], "%Y-%m-%d")
     comp_end = datetime.strptime(config["competition_end"], "%Y-%m-%d")
-    assert(comp_start.weekday() == comp_end.weekday())
-    assert(comp_start <= comp_end)
-    
+    assert comp_start.weekday() == comp_end.weekday()
+    assert comp_start <= comp_end
+
     sub_start = datetime.strptime(config["submission_start"], "%H:%M:%S").time()
     sub_end = datetime.strptime(config["submission_end"], "%H:%M:%S").time()
-    assert(sub_start <= sub_end)
-    
-    return comp_start, comp_start, sub_start, sub_end
+    assert sub_start <= sub_end
+
+    return comp_start, comp_end, sub_start, sub_end
 
 
-# Set some globals. Not sure how else to pass these into the callbacks.
-comp_start, comp_end, sub_start, sub_end = read_config(
-    "../config/config.json"
-)
+# Set some globals. Todo: not sure how else to pass these into the callbacks.
+comp_start, comp_end, sub_start, sub_end = read_config("../config/config.json")
+forecasts_file = "../data/forecasts.csv"
+
+
+def competition_days():
+    t = comp_start
+    while t <= comp_end:
+        yield t
+        t += timedelta(days=7)
+
 
 def component_title():
     return html.Div(
@@ -51,7 +60,7 @@ def component_submission_form():
     maxlen = 256
     horizon_start = (comp_start + timedelta(days=1)).strftime("%a")
     horizon_end = comp_start.strftime("%a")
-    
+
     return html.Div(
         [
             html.P(
@@ -65,7 +74,7 @@ def component_submission_form():
                     dbc.Input(
                         id="input-name", placeholder="Enter name", maxLength=maxlen
                     ),
-                    dbc.FormText("Allowed characters: A-Za-z',-<space>"),
+                    dbc.FormText("Allowed characters: A-Za-z',-.<space>"),
                 ]
             ),
             dbc.FormGroup(
@@ -83,7 +92,7 @@ def component_submission_form():
                 [
                     dbc.Label(
                         "Forecasts for {} - {}".format(horizon_start, horizon_end),
-                        html_for="input-forecasts"
+                        html_for="input-forecasts",
                     ),
                     dbc.Input(
                         id="input-forecasts",
@@ -100,7 +109,39 @@ def component_submission_form():
 
 
 def component_table():
-    return html.Div([])
+    horizons = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
+
+    read_cols = ["fcast_date", "fcast_time", "snumber", "name", "method"] + horizons
+
+    full_df = pd.read_csv(
+        forecasts_file, sep="|", names=read_cols, parse_dates=["fcast_date"]
+    )
+
+    full_df["fcast_datestr"] = full_df["fcast_date"].map(
+        lambda t: t.strftime("%Y-%m-%d")
+    )
+    print_cols = ["fcast_datestr", "name"] + horizons
+
+    content = [html.H4("Weekly results")]
+
+    for t in competition_days():
+        content.append(html.P(t.strftime("%Y-%m-%d")))
+
+        week_df = full_df[full_df["fcast_date"] == t]
+        if week_df.empty:
+            continue
+
+        actual_df = week_df[week_df["snumber"] == 0]
+        if actual_df.empty:
+            continue
+
+        content.append(
+            dtab.DataTable(
+                data=week_df.to_dict("records"),
+                columns=[{"name": i, "id": i} for i in print_cols],
+            )
+        )
+    return html.Div(content)
 
 
 def component_git_version():
@@ -128,6 +169,8 @@ def content():
         component_title(),
         html.Hr(),
         component_submission_form(),
+        html.Hr(),
+        component_table(),
         html.Hr(),
         component_git_version(),
     ]
@@ -193,8 +236,8 @@ def update_form(n_clicks, name, snumber, forecasts):
         msg = "Required: Forecasts"
         return enabled_tuple(msg)
 
-    if not re.match("[-,\ 'A-Za-z]+$", name):
-        msg = "Allowed characters for name: A-Za-z',-<space>."
+    if not re.match("[-,.\ 'A-Za-z]+$", name):
+        msg = "Allowed characters for name: A-Za-z',-.<space>."
         return enabled_tuple(msg)
 
     if not re.match("[0-9]{9}$", snumber):
@@ -228,7 +271,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         html.P(" | ".join(record)),
     ]
 
-    f = open("../data/submissions.csv", "a")
+    f = open(forecasts_file, "a")
     f.write("|".join(record) + "\n")
     f.close()
 
