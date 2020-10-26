@@ -22,56 +22,67 @@ app = dash.Dash(
     name=__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP]
 )
 
+
 def component_title():
-    return html.Div(html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50})
+    return html.Div(
+        html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}
+    )
+
 
 def component_submission_form():
     maxlen = 256
-    return html.Div([
-        html.P(
-            "Submission times: each {}, {} to {}.".format(
-                submission_day, submission_start, submission_end
-            )
-        ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Name", html_for="input-name"),
-                dbc.Input(id="input-name", placeholder="Enter name", maxLength=maxlen),
-                dbc.FormText("Allowed characters: A-Za-z',-<space>"),
-            ]
-        ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Student No", html_for="input-snumber"),
-                dbc.Input(
-                    id="input-snumber", placeholder="Enter student no", maxLength=maxlen
-                ),
-                dbc.FormText("Nine numeric digits, no spaces"),
-            ]
-        ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Forecasts for Sat - Fri", html_for="input-forecasts"),
-                dbc.Input(
-                    id="input-forecasts",
-                    placeholder="Enter forecasts",
-                    maxLength=maxlen,
-                ),
-                dbc.FormText("Seven floating point numbers, comma-separated"),
-            ]
-        ),
-        dbc.Button("Submit", id="submit-button"),
-        dbc.Jumbotron([html.Div(id="submit-feedback")]),
-    ])
+    return html.Div(
+        [
+            html.P(
+                "Submission times: each {}, {} to {}.".format(
+                    submission_day, submission_start, submission_end
+                )
+            ),
+            dbc.FormGroup(
+                [
+                    dbc.Label("Name", html_for="input-name"),
+                    dbc.Input(
+                        id="input-name", placeholder="Enter name", maxLength=maxlen
+                    ),
+                    dbc.FormText("Allowed characters: A-Za-z',-<space>"),
+                ]
+            ),
+            dbc.FormGroup(
+                [
+                    dbc.Label("Student No", html_for="input-snumber"),
+                    dbc.Input(
+                        id="input-snumber",
+                        placeholder="Enter student no",
+                        maxLength=maxlen,
+                    ),
+                    dbc.FormText("Nine numeric digits, no spaces"),
+                ]
+            ),
+            dbc.FormGroup(
+                [
+                    dbc.Label("Forecasts for Sat - Fri", html_for="input-forecasts"),
+                    dbc.Input(
+                        id="input-forecasts",
+                        placeholder="Enter forecasts",
+                        maxLength=maxlen,
+                    ),
+                    dbc.FormText("Seven floating point numbers, comma-separated"),
+                ]
+            ),
+            dbc.Button("Submit", id="submit-button"),
+            dbc.Jumbotron([html.Div(id="submit-feedback")]),
+        ]
+    )
+
 
 def component_git_version():
     git_shorthash = "Unknown"
     git_time = "00:00"
     git_author = "Unknown"
 
-    git_output = os.popen(
-        "git show --no-patch --format='%h%n%ai%n%an'"
-    ).read().splitlines()
+    git_output = (
+        os.popen("git show --no-patch --format='%h%n%ai%n%an'").read().splitlines()
+    )
 
     if len(git_output) == 3:
         git_shorthash = git_output[0]
@@ -82,7 +93,7 @@ def component_git_version():
         "Version {} [{}] by {}".format(git_shorthash, git_time, git_author),
         style={"color": "grey", "font-size": "small"},
     )
-        
+
 
 def content():
     return [
@@ -92,6 +103,7 @@ def content():
         html.Hr(),
         component_git_version(),
     ]
+
 
 def enabled_tuple(msg):
     return False, False, False, False, msg
