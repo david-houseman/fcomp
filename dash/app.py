@@ -8,8 +8,7 @@ from dash.dependencies import Input, Output, State
 
 import json
 import pandas as pd
-
-# import numpy as np
+import numpy as np
 # import plotly.graph_objs as go
 
 from datetime import datetime, timedelta, date, time
@@ -108,10 +107,15 @@ def component_submission_form():
     )
 
 
-def component_table():
-    horizons = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
+def rmsfe(week_df, actual_df):
+    y = actual_df.values
+    z = week_df.values - np.outer(np.ones(len(week_df)), y)
+    return np.sqrt( np.diag( np.matmul( z, z.transpose() ) ) / 7 )
+    
 
-    read_cols = ["fcast_date", "fcast_time", "snumber", "name", "method"] + horizons
+def component_table():
+    horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
+    read_cols = ["fcast_date", "fcast_time", "snumber", "name", "method"] + horizon_cols
 
     full_df = pd.read_csv(
         forecasts_file, sep="|", names=read_cols, parse_dates=["fcast_date"]
@@ -120,10 +124,9 @@ def component_table():
     full_df["fcast_datestr"] = full_df["fcast_date"].map(
         lambda t: t.strftime("%Y-%m-%d")
     )
-    print_cols = ["fcast_datestr", "name"] + horizons
+    print_cols = ["fcast_datestr", "name"] + horizon_cols + ["rmsfe"]
 
     content = [html.H4("Weekly results")]
-
     for t in competition_days():
         content.append(html.P(t.strftime("%Y-%m-%d")))
 
@@ -135,6 +138,10 @@ def component_table():
         if actual_df.empty:
             continue
 
+        week_df["rmsfe"] = np.round(
+            rmsfe( week_df[horizon_cols], actual_df[horizon_cols] ), 2
+        )
+    
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
