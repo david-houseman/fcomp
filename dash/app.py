@@ -108,17 +108,10 @@ def component_submission_form():
         ]
     )
 
-def rmsfe(week_df, actual_df):
-    if actual_df.empty:
-        return np.zeros(len(week_df)) * math.nan             
-    
-    err = week_df.values - np.outer(np.ones(len(week_df)), actual_df.values[-1,])
-    return np.sqrt( np.diag( np.matmul( err, err.transpose() ) ) / 7 )
-    
 
 def component_table():
     horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
-    read_cols = ["fcast_date", "snumber", "name", "method"] + horizon_cols
+    read_cols = ["fcast_date", "snumber", "name", "method"] + horizon_cols + ["rmsfe"]
     
     full_df = pd.read_csv(
         forecasts_file, sep="|", names=read_cols, parse_dates=["fcast_date"]
@@ -134,19 +127,13 @@ def component_table():
     now = datetime.now()    
     content = []
     for t in competition_days():
-        week_df = full_df[full_df["fcast_date"] == t].copy()
+        week_df = full_df[full_df["fcast_date"] == t]
         if week_df.empty:
             continue
 
         if now < t + timedelta(days=1):
-            continue;
-        
-        actual_df = week_df[week_df["snumber"] == 0]
-        week_df["rmsfe"] = np.round(
-            rmsfe( week_df[horizon_cols], actual_df[horizon_cols] ), 2
-        )
-        week_df = week_df.sort_values(by=["rmsfe", "snumber"])
-        
+            continue;      
+    
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
