@@ -4,11 +4,25 @@ import datetime as dt
 
 from fnmatch import fnmatch
 import os
+import json
+from datetime import datetime, date, time, timedelta
 
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from util import is_sorted
+
+def read_config(config_path):
+    with open(config_path) as f:
+        config = json.load(f)
+
+    comp_start = datetime.strptime(config["competition_start"], "%Y-%m-%d")
+    comp_end = datetime.strptime(config["competition_end"], "%Y-%m-%d")
+    assert comp_start.weekday() == comp_end.weekday()
+    assert comp_start <= comp_end
+
+    return comp_start, comp_end
+
 
 def read_data(aemo_dir):
     its = pd.DataFrame()
@@ -73,27 +87,25 @@ def write_fcast(f, now, snumber, name, fcasts):
     f.write("|".join(record) + "\n")
 
 
-# If today is submission_day, generate benchmark forecasts.
-# If today is not submission_day, generate actuals.
-def fcast(submission_day, aemo_dir, fcast_file): 
-    now = dt.datetime.now()
+def fcast(aemo_dir, fcast_file):
+    comp_start, comp_end = read_config("../config/config.json")
     y = read_data(aemo_dir)
 
-    if now.strftime("%a") == submission_day:
+    # If today is submission_day, generate benchmark forecasts.
+    now = dt.datetime.now()
+    if now.weekday() == comp_start.weekday():
         with open(fcast_file, "w") as f:    
             write_fcast(f, now, "000000100", "Seasonal RW", fcast_seasonalrw(y))
             write_fcast(f, now, "000000101", "SES", fcast_ses(y))
             write_fcast(f, now, "000000102", "SARIMA", fcast_sarima(y))
             return
-
-    for j in range(len(y) - 13, len(y) - 7):
-        now = dt.datetime.combine(y.index[j], dt.time())
-        if now.strftime("%a") == submission_day:
-            break
-
-    with open(fcast_file, "w") as f:        
-        write_fcast(f, now, "000000000", "Actual", y[j + 1 : j + 8])
-
+        
+    # If today is the day after submission_day, generate actuals.
+    if now.weekday() == (comp_start.weekday() + 1) % 7:
+        now = dt.datetime.combine(y.index[-8], dt.time())
+        with open(fcast_file, "w") as f:        
+            write_fcast(f, now, "000000000", "Actual", y[-7:])
+            return
     
 if __name__ == "__main__":
-    fcast("Fri", "../data/aemo/", "../data/forecasts.csv")
+    fcast("../data/aemo/", "../data/forecasts.csv")
