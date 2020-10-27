@@ -7,6 +7,7 @@ import dash_table as dtab
 from dash.dependencies import Input, Output, State
 
 import json
+import math
 import pandas as pd
 import numpy as np
 # import plotly.graph_objs as go
@@ -39,8 +40,9 @@ def read_config(config_path):
 
 # Set some globals. Todo: not sure how else to pass these into the callbacks.
 comp_start, comp_end, sub_start, sub_end = read_config("../config/config.json")
-forecasts_file = "../data/forecasts.csv"
 
+forecasts_file = "../data/forecasts.csv"
+submissions_file = "../data/submissions.csv"
 
 def competition_days():
     t = comp_start
@@ -106,17 +108,18 @@ def component_submission_form():
         ]
     )
 
-
 def rmsfe(week_df, actual_df):
-    y = actual_df.values
-    z = week_df.values - np.outer(np.ones(len(week_df)), y)
-    return np.sqrt( np.diag( np.matmul( z, z.transpose() ) ) / 7 )
+    if actual_df.empty:
+        return np.zeros(len(week_df)) * math.nan             
+    
+    err = week_df.values - np.outer(np.ones(len(week_df)), actual_df.values[-1,])
+    return np.sqrt( np.diag( np.matmul( err, err.transpose() ) ) / 7 )
     
 
 def component_table():
     horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
-    read_cols = ["fcast_date", "fcast_time", "snumber", "name", "method"] + horizon_cols
-
+    read_cols = ["fcast_date", "snumber", "name", "method"] + horizon_cols
+    
     full_df = pd.read_csv(
         forecasts_file, sep="|", names=read_cols, parse_dates=["fcast_date"]
     )
@@ -124,25 +127,25 @@ def component_table():
     full_df["fcast_datestr"] = full_df["fcast_date"].map(
         lambda t: t.strftime("%Y-%m-%d")
     )
+
+    horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
     print_cols = ["fcast_datestr", "name"] + horizon_cols + ["rmsfe"]
 
-    content = [html.H4("Weekly results")]
+    now = datetime.now()    
+    content = []
     for t in competition_days():
-        content.append(html.P(t.strftime("%Y-%m-%d")))
-
-        week_df = full_df[full_df["fcast_date"] == t]
+        week_df = full_df[full_df["fcast_date"] == t].copy()
         if week_df.empty:
             continue
 
+        if now < t + timedelta(days=1):
+            continue;
+        
         actual_df = week_df[week_df["snumber"] == 0]
-        if actual_df.empty:
-            continue
-
         week_df["rmsfe"] = np.round(
             rmsfe( week_df[horizon_cols], actual_df[horizon_cols] ), 2
         )
-
-        week_df = week_df.sort_values(by=["rmsfe"])
+        week_df = week_df.sort_values(by=["rmsfe", "snumber"])
         
         content.append(
             dtab.DataTable(
@@ -150,7 +153,10 @@ def component_table():
                 columns=[{"name": i, "id": i} for i in print_cols],
             )
         )
-    return html.Div(content)
+        content.append(html.P(t.strftime("%Y-%m-%d")))
+
+    content.reverse()
+    return html.Div([html.H4("Weekly results")] + content)
 
 
 def component_git_version():
@@ -209,7 +215,7 @@ def suspended_tuple(msg):
         State("input-forecasts", "value"),
     ],
 )
-def update_form(n_clicks, name, snumber, forecasts):
+def update_form(n_clicks, name, snumber, fcasts_str):
 
     now = datetime.now()
 
@@ -242,7 +248,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         msg = "Required: Student No"
         return enabled_tuple(msg)
 
-    if not forecasts:
+    if not fcasts_str:
         msg = "Required: Forecasts"
         return enabled_tuple(msg)
 
@@ -254,7 +260,7 @@ def update_form(n_clicks, name, snumber, forecasts):
         msg = "Student No must be 9 digits, with no spaces."
         return enabled_tuple(msg)
 
-    fstrs = forecasts.split(",")
+    fstrs = fcasts_str.split(",")
     nf = len(fstrs)
     if nf < 7:
         msg = "Too few forecasts: Expected 7, received {}.".format(nf)
@@ -263,28 +269,24 @@ def update_form(n_clicks, name, snumber, forecasts):
         msg = "Too many forecasts: Expected 7, received {}.".format(nf)
         return enabled_tuple(msg)
 
-    fcasts = []
-    for s in fstrs:
-        try:
-            fcasts.append(float(s))
-        except ValueError:
-            msg = "Failed to parse forecast {} as float.".format(s)
-            return enabled_tuple(msg)
+    try:
+        fcasts = fstrs.map(lambda s: float(s))
+    except ValueError:
+        msg = "Failed to parse forecast {} as float.".format(s)
+        return enabled_tuple(msg)
 
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
     method = "M"
     record = [date_str, time_str, snumber, name, method] + [str(f) for f in fcasts]
 
+    with open(submissions_file, "a+") as f:
+        f.write("|".join(record) + "\n")
+
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(" | ".join(record)),
-    ]
-
-    f = open(forecasts_file, "a")
-    f.write("|".join(record) + "\n")
-    f.close()
-
+    ] 
     return suspended_tuple(msg)
 
 
