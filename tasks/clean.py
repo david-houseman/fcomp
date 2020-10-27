@@ -5,16 +5,32 @@ import math
 
 from common import read_config, competition_days
 
+def deduplicate(full_df):
+    return(
+        full_df.sort_values(by=["fcast_date", "fcast_time", "snumber"])
+        .groupby(["fcast_date", "snumber"])
+        .tail(1)
+        .drop(columns="fcast_time")
+    )
 
-def auto_trim(week_df, participants):
-    return week_df.loc[week_df.index.map(lambda s: s in participants.keys())]
+
+def auto_trim(full_df, comp_start, comp_end):
+    week_df = full_df[full_df["fcast_date"] == comp_start]
+    participants = dict(zip(week_df["snumber"], week_df["name"]))
+
+    trim_df = pd.DataFrame()
+    for index, row in full_df.iterrows():
+        if row["snumber"] in participants.keys():
+            trim_df = trim_df.append(row)
+
+    return trim_df
 
 
 def auto_fill(week_df, prev_df):
     if prev_df.empty:
         return week_df
 
-    for s in prev_df.index:
+    for t in competition_days(comp_start, comp_end):
         if s == 0 or s in week_df.index:
             continue
         auto_df = pd.DataFrame(prev_df.loc[s].to_dict(), index=[s])
@@ -46,31 +62,20 @@ def clean(config_file, submissions_file, forecasts_file):
     ]
 
     read_cols = ["fcast_date", "fcast_time", "snumber", "name", "method"] + horizon_cols
-    index_cols = ["fcast_date", "fcast_time", "snumber", "method"]
 
     full_df = pd.read_csv(
         submissions_file,
         sep="|",
         names=read_cols,
-        index_col=index_cols,
         parse_dates=["fcast_date"],
     )
 
-    full_df = (
-        full_df.sort_index(level=["fcast_date", "fcast_time", "snumber", "method"])
-        .groupby(["fcast_date", "snumber"])
-        .tail(1)
-    )
-    full_df.index = full_df.index.droplevel("fcast_time")
-    full_df.index = full_df.index.droplevel("method")
-    
+    full_df = deduplicate(full_df)
     print(full_df)
 
-    week_df = full_df.loc[comp_start]
-    participants = dict(zip(week_df.index, week_df["name"]))
-
-    full_df = full_df.drop(columns=["name"])
-
+    full_df = auto_trim(full_df, comp_start, comp_end)
+    print(full_df)
+    
     fcast_df = pd.DataFrame()
     prev_df = pd.DataFrame()
     for t in competition_days(comp_start, comp_end):
