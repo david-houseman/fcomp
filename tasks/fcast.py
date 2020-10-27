@@ -94,7 +94,7 @@ def fcast(aemo_dir, fcast_file):
     # If today is submission_day, generate benchmark forecasts.
     now = dt.datetime.now()
     if now.weekday() == comp_start.weekday():
-        with open(fcast_file, "w") as f:    
+        with open(fcast_file, "a+") as f:    
             write_fcast(f, now, "000000100", "Seasonal RW", fcast_seasonalrw(y))
             write_fcast(f, now, "000000101", "SES", fcast_ses(y))
             write_fcast(f, now, "000000102", "SARIMA", fcast_sarima(y))
@@ -103,7 +103,7 @@ def fcast(aemo_dir, fcast_file):
     # If today is the day after submission_day, generate actuals.
     if now.weekday() == (comp_start.weekday() + 1) % 7:
         now = dt.datetime.combine(y.index[-8], dt.time())
-        with open(fcast_file, "w") as f:        
+        with open(fcast_file, "a+") as f:        
             write_fcast(f, now, "000000000", "Actual", y[-7:])
             return
     
