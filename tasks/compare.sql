@@ -1,21 +1,30 @@
-SET client_min_messages TO WARNING;
+CREATE TABLE IF NOT EXISTS submissions
+(
+	forecast_date DATE NOT NULL,
+	forecast_time TIME NOT NULL,
+	participant INTEGER NOT NULL,
+	fullname VARCHAR NOT NULL,
+	origin CHAR NOT NULL,
+	h1 REAL NOT NULL,
+	h2 REAL NOT NULL,
+	h3 REAL NOT NULL,
+	h4 REAL NOT NULL,
+	h5 REAL NOT NULL,
+	h6 REAL NOT NULL,
+	h7 REAL NOT NULL
+);
 
-DROP SCHEMA IF EXISTS fc CASCADE;
-CREATE SCHEMA fc;
-SET search_path TO fc;
-
-----------------------------------------------------------------------------------
-
-CREATE TABLE participants
+CREATE TABLE IF NOT EXISTS participants
 (
 	participant INTEGER PRIMARY KEY,
 	fullname VARCHAR NOT NULL
 );
 
-CREATE TABLE forecasts
+CREATE TABLE IF NOT EXISTS forecasts
 (
 	forecast_date DATE NOT NULL,
 	participant INTEGER NOT NULL,
+	origin CHAR NOT NULL,
 	h1 REAL NOT NULL,
 	h2 REAL NOT NULL,
 	h3 REAL NOT NULL,
@@ -27,14 +36,85 @@ CREATE TABLE forecasts
 	FOREIGN KEY( participant ) REFERENCES participants
 );
 
-----------------------------------------------------------------------------------
-
-\copy participants FROM forecasts/participants.csv WITH CSV HEADER
-\copy forecasts FROM forecasts/forecasts.csv WITH CSV HEADER
+DELETE FROM forecasts;
+DELETE FROM participants;
 
 ----------------------------------------------------------------------------------
 
+DELETE FROM submissions;
+\copy submissions FROM ../data/submissions.csv WITH CSV DELIMITER '|'
+--SELECT * FROM submissions;
+
+----------------------------------------------------------------------------------
+
+-- Select the last (by forecast_time) forecasts for each (forecast_date, participant).
+CREATE OR REPLACE VIEW submissions_dedup AS
+SELECT DISTINCT ON (forecast_date, participant)
+forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
+FROM submissions
+ORDER BY forecast_date, participant, forecast_time DESC;
+
+-- Populate the participants table with the (unique) participants of week 1.
+CREATE OR REPLACE PROCEDURE declare_participants(comp_start DATE)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	INSERT INTO participants
+	SELECT DISTINCT ON (participant)
+	participant, fullname
+	FROM submissions
+	WHERE forecast_date = comp_start
+	ORDER BY participant, forecast_time DESC;		
+
+	COMMIT;
+END;
+$$;
+
+CALL declare_participants('2020-10-19');
 SELECT * FROM participants;
+
+-- Populate the forecasts table with the deduplicated submissions,
+-- from known participants only.
+INSERT INTO forecasts
+SELECT forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
+FROM submissions_dedup
+JOIN participants USING (participant);
+
+SELECT * FROM forecasts;
+
+
+CREATE OR REPLACE PROCEDURE auto_fill(prev_date DATE, curr_date DATE)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+	INSERT INTO forecasts
+	SELECT curr_date, p.participant, 'A', p.h1, p.h2, p.h3, p.h4, p.h5, p.h6, p.h7
+	FROM
+	(  	
+		SELECT *
+		FROM forecasts
+		WHERE forecast_date = prev_date
+	) p
+	LEFT JOIN
+	(
+		SELECT *	
+		FROM forecasts
+		WHERE forecast_date = curr_date
+	) c
+	ON p.participant = c.participant
+	WHERE c.participant IS NULL
+	AND p.participant > 0;
+	
+	COMMIT;
+END;
+$$;
+
+CALL auto_fill('2020-10-19', '2020-10-26');
+
+\q
+
+
 
 -- Round all forecasts to specified precision
 UPDATE forecasts
