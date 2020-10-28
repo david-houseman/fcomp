@@ -16,13 +16,13 @@ CREATE TABLE forecasts
 (
 	forecast_date DATE NOT NULL,
 	participant INTEGER NOT NULL,
-	sat REAL NOT NULL,
-	sun REAL NOT NULL,
-	mon REAL NOT NULL,
-	tue REAL NOT NULL,
-	wed REAL NOT NULL,
-	thu REAL NOT NULL,
-	fri REAL NOT NULL,
+	h1 REAL NOT NULL,
+	h2 REAL NOT NULL,
+	h3 REAL NOT NULL,
+	h4 REAL NOT NULL,
+	h5 REAL NOT NULL,
+	h6 REAL NOT NULL,
+	h7 REAL NOT NULL,
 	PRIMARY KEY( forecast_date, participant ),
 	FOREIGN KEY( participant ) REFERENCES participants
 );
@@ -39,13 +39,13 @@ SELECT * FROM participants;
 -- Round all forecasts to specified precision
 UPDATE forecasts
 SET
-sat = ROUND( sat ),
-sun = ROUND( sun ),
-mon = ROUND( mon ),
-tue = ROUND( tue ),
-wed = ROUND( wed ),
-thu = ROUND( thu ),
-fri = ROUND( fri )
+h1 = ROUND( h1 ),
+h2 = ROUND( h2 ),
+h3 = ROUND( h3 ),
+h4 = ROUND( h4 ),
+h5 = ROUND( h5 ),
+h6 = ROUND( h6 ),
+h7 = ROUND( h7 )
 WHERE true;
 
 CREATE VIEW forecasts_view AS
@@ -62,13 +62,13 @@ CREATE VIEW forecasts_group_mean AS
 SELECT
 forecast_date,
 300 AS participant,
-ROUND( SUM( sat ) / COUNT( sat ) ) AS sat,
-ROUND( SUM( sun ) / COUNT( sun ) ) AS sun,
-ROUND( SUM( mon ) / COUNT( mon ) ) AS mon,
-ROUND( SUM( tue ) / COUNT( tue ) ) AS tue,
-ROUND( SUM( wed ) / COUNT( wed ) ) AS wed,
-ROUND( SUM( thu ) / COUNT( thu ) ) AS thu,
-ROUND( SUM( fri ) / COUNT( fri ) ) AS fri
+ROUND( SUM( h1 ) / COUNT( h1 ) ) AS h1,
+ROUND( SUM( h2 ) / COUNT( h2 ) ) AS h2,
+ROUND( SUM( h3 ) / COUNT( h3 ) ) AS h3,
+ROUND( SUM( h4 ) / COUNT( h4 ) ) AS h4,
+ROUND( SUM( h5 ) / COUNT( h5 ) ) AS h5,
+ROUND( SUM( h6 ) / COUNT( h6 ) ) AS h6,
+ROUND( SUM( h7 ) / COUNT( h7 ) ) AS h7
 FROM forecasts
 WHERE participant >= 1000
 GROUP BY forecast_date;
@@ -80,13 +80,13 @@ CREATE VIEW forecasts_group_median AS
 SELECT
 forecast_date,
 301 AS participant,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY sat ) ) AS sat,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY sun ) ) AS sun,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY mon ) ) AS mon,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY tue ) ) AS tue,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY wed ) ) AS wed,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY thu ) ) AS thu,
-ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY fri ) ) AS fri
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h1 ) ) AS h1,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h2 ) ) AS h2,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h3 ) ) AS h3,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h4 ) ) AS h4,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h5 ) ) AS h5,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h6 ) ) AS h6,
+ROUND( percentile_disc( 0.5 ) WITHIN GROUP( ORDER BY h7 ) ) AS h7
 FROM forecasts
 WHERE participant >= 1000
 GROUP BY forecast_date;
@@ -99,13 +99,13 @@ CREATE VIEW forecasts_combination AS
 SELECT
 forecast_date,
 302 AS participant,
-ROUND( SUM( sat ) / COUNT( sat ) ) AS sat,
-ROUND( SUM( sun ) / COUNT( sun ) ) AS sun,
-ROUND( SUM( mon ) / COUNT( mon ) ) AS mon,
-ROUND( SUM( tue ) / COUNT( tue ) ) AS tue,
-ROUND( SUM( wed ) / COUNT( wed ) ) AS wed,
-ROUND( SUM( thu ) / COUNT( thu ) ) AS thu,
-ROUND( SUM( fri ) / COUNT( fri ) ) AS fri
+ROUND( SUM( h1 ) / COUNT( h1 ) ) AS h1,
+ROUND( SUM( h2 ) / COUNT( h2 ) ) AS h2,
+ROUND( SUM( h3 ) / COUNT( h3 ) ) AS h3,
+ROUND( SUM( h4 ) / COUNT( h4 ) ) AS h4,
+ROUND( SUM( h5 ) / COUNT( h5 ) ) AS h5,
+ROUND( SUM( h6 ) / COUNT( h6 ) ) AS h6,
+ROUND( SUM( h7 ) / COUNT( h7 ) ) AS h7
 FROM forecasts
 WHERE participant in ( 201, 202, 205 )
 GROUP BY forecast_date;
@@ -120,13 +120,13 @@ CREATE VIEW errors AS
 SELECT
 a.forecast_date,
 b.participant,
-( b.sat - a.sat ) AS sat,
-( b.sun - a.sun ) AS sun,
-( b.mon - a.mon ) AS mon,
-( b.tue - a.tue ) AS tue,
-( b.wed - a.wed ) AS wed,
-( b.thu - a.thu ) AS thu,
-( b.fri - a.fri ) AS fri
+( b.h1 - a.h1 ) AS h1,
+( b.h2 - a.h2 ) AS h2,
+( b.h3 - a.h3 ) AS h3,
+( b.h4 - a.h4 ) AS h4,
+( b.h5 - a.h5 ) AS h5,
+( b.h6 - a.h6 ) AS h6,
+( b.h7 - a.h7 ) AS h7
 FROM forecasts a
 JOIN forecasts b
 USING( forecast_date )
@@ -145,7 +145,7 @@ CREATE VIEW week_errors AS
 SELECT
 forecast_date,
 participant,
-sqrt( ( sat*sat + sun*sun + mon*mon + tue*tue + wed*wed + thu*thu + fri*fri ) / 7 )
+sqrt( ( h1*h1 + h2*h2 + h3*h3 + h4*h4 + h5*h5 + h6*h6 + h7*h7 ) / 7 )
   ::NUMERIC(16,4) AS rmsfe
 FROM errors;
 
@@ -183,20 +183,20 @@ SELECT * FROM overall_errors_view;
 CREATE VIEW horizon_errors AS
 SELECT participant,
 COUNT( forecast_date ),
-sqrt( SUM( sat*sat ) / COUNT( sat ) )::NUMERIC(16,4) AS sat,
-sqrt( SUM( sun*sun ) / COUNT( sun ) )::NUMERIC(16,4) AS sun,
-sqrt( SUM( mon*mon ) / COUNT( mon ) )::NUMERIC(16,4) AS mon,
-sqrt( SUM( tue*tue ) / COUNT( tue ) )::NUMERIC(16,4) AS tue,
-sqrt( SUM( wed*wed ) / COUNT( wed ) )::NUMERIC(16,4) AS wed,
-sqrt( SUM( thu*thu ) / COUNT( thu ) )::NUMERIC(16,4) AS thu,
-sqrt( SUM( fri*fri ) / COUNT( fri ) )::NUMERIC(16,4) AS fri
+sqrt( SUM( h1*h1 ) / COUNT( h1 ) )::NUMERIC(16,4) AS h1,
+sqrt( SUM( h2*h2 ) / COUNT( h2 ) )::NUMERIC(16,4) AS h2,
+sqrt( SUM( h3*h3 ) / COUNT( h3 ) )::NUMERIC(16,4) AS h3,
+sqrt( SUM( h4*h4 ) / COUNT( h4 ) )::NUMERIC(16,4) AS h4,
+sqrt( SUM( h5*h5 ) / COUNT( h5 ) )::NUMERIC(16,4) AS h5,
+sqrt( SUM( h6*h6 ) / COUNT( h6 ) )::NUMERIC(16,4) AS h6,
+sqrt( SUM( h7*h7 ) / COUNT( h7 ) )::NUMERIC(16,4) AS h7
 FROM errors
 GROUP BY participant;
 
 CREATE VIEW horizon_errors_view AS
 SELECT * FROM horizon_errors
 NATURAL JOIN participants
-ORDER BY sat ASC;
+ORDER BY h1 ASC;
 
 SELECT * FROM horizon_errors_view;
 \copy ( SELECT * FROM horizon_errors_view ) TO 'QBUS3850_horizon_results.csv' WITH CSV HEADER
@@ -205,13 +205,13 @@ SELECT * FROM horizon_errors_view;
 
 CREATE VIEW horizon_combined AS
 SELECT COUNT( forecast_date ),
-sqrt( SUM( sat*sat ) / COUNT( sat ) )::NUMERIC(16,4) AS sat,
-sqrt( SUM( sun*sun ) / COUNT( sun ) )::NUMERIC(16,4) AS sun,
-sqrt( SUM( mon*mon ) / COUNT( mon ) )::NUMERIC(16,4) AS mon,
-sqrt( SUM( tue*tue ) / COUNT( tue ) )::NUMERIC(16,4) AS tue,
-sqrt( SUM( wed*wed ) / COUNT( wed ) )::NUMERIC(16,4) AS wed,
-sqrt( SUM( thu*thu ) / COUNT( thu ) )::NUMERIC(16,4) AS thu,
-sqrt( SUM( fri*fri ) / COUNT( fri ) )::NUMERIC(16,4) AS fri
+sqrt( SUM( h1*h1 ) / COUNT( h1 ) )::NUMERIC(16,4) AS h1,
+sqrt( SUM( h2*h2 ) / COUNT( h2 ) )::NUMERIC(16,4) AS h2,
+sqrt( SUM( h3*h3 ) / COUNT( h3 ) )::NUMERIC(16,4) AS h3,
+sqrt( SUM( h4*h4 ) / COUNT( h4 ) )::NUMERIC(16,4) AS h4,
+sqrt( SUM( h5*h5 ) / COUNT( h5 ) )::NUMERIC(16,4) AS h5,
+sqrt( SUM( h6*h6 ) / COUNT( h6 ) )::NUMERIC(16,4) AS h6,
+sqrt( SUM( h7*h7 ) / COUNT( h7 ) )::NUMERIC(16,4) AS h7
 FROM errors
 WHERE participant >= 1000;
 
@@ -222,19 +222,19 @@ SELECT * FROM horizon_combined;
 ----------------------------------------------------------------------------------
 
 CREATE VIEW unpivot AS
-SELECT participant, forecast_date, 1 AS horizon, sat AS forecast FROM forecasts
+SELECT participant, forecast_date, 1 AS horizon, h1 AS forecast FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 2 AS horizon, sun FROM forecasts
+SELECT participant, forecast_date, 2 AS horizon, h2 FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 3 AS horizon, mon FROM forecasts
+SELECT participant, forecast_date, 3 AS horizon, h3 FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 4 AS horizon, tue FROM forecasts
+SELECT participant, forecast_date, 4 AS horizon, h4 FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 5 AS horizon, wed FROM forecasts
+SELECT participant, forecast_date, 5 AS horizon, h5 FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 6 AS horizon, thu FROM forecasts
+SELECT participant, forecast_date, 6 AS horizon, h6 FROM forecasts
 UNION ALL
-SELECT participant, forecast_date, 7 AS horizon, fri FROM forecasts
+SELECT participant, forecast_date, 7 AS horizon, h7 FROM forecasts
 ORDER BY forecast_date, horizon, participant
 ;
 
