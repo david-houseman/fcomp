@@ -36,9 +36,6 @@ CREATE TABLE IF NOT EXISTS forecasts
 	FOREIGN KEY( participant ) REFERENCES participants
 );
 
-DELETE FROM forecasts;
-DELETE FROM participants;
-
 ----------------------------------------------------------------------------------
 
 DELETE FROM submissions;
@@ -54,47 +51,18 @@ forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
 FROM submissions
 ORDER BY forecast_date, participant, forecast_time DESC;
 
--- Populate the participants table with the (unique) participants of week 1.
-CREATE OR REPLACE PROCEDURE declare_participants(comp_start DATE)
+
+CREATE OR REPLACE PROCEDURE auto_fill(curr_date DATE)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	INSERT INTO participants
-	SELECT DISTINCT ON (participant)
-	participant, fullname
-	FROM submissions
-	WHERE forecast_date = comp_start
-	ORDER BY participant, forecast_time DESC;		
-
-	COMMIT;
-END;
-$$;
-
-CALL declare_participants('2020-10-19');
-SELECT * FROM participants;
-
--- Populate the forecasts table with the deduplicated submissions,
--- from known participants only.
-INSERT INTO forecasts
-SELECT forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
-FROM submissions_dedup
-JOIN participants USING (participant);
-
-SELECT * FROM forecasts;
-
-
-CREATE OR REPLACE PROCEDURE auto_fill(prev_date DATE, curr_date DATE)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-
 	INSERT INTO forecasts
 	SELECT curr_date, p.participant, 'A', p.h1, p.h2, p.h3, p.h4, p.h5, p.h6, p.h7
 	FROM
 	(  	
 		SELECT *
 		FROM forecasts
-		WHERE forecast_date = prev_date
+		WHERE forecast_date = curr_date - 7
 	) p
 	LEFT JOIN
 	(
@@ -104,29 +72,63 @@ BEGIN
 	) c
 	ON p.participant = c.participant
 	WHERE c.participant IS NULL
-	AND p.participant > 0;
+	AND p.origin != 'B';
 	
 	COMMIT;
 END;
 $$;
 
-CALL auto_fill('2020-10-19', '2020-10-26');
+CREATE OR REPLACE PROCEDURE clean(comp_start DATE, comp_end DATE)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	d DATE := comp_start;
+BEGIN
+	DELETE FROM forecasts;
+	DELETE FROM participants;
 
-\q
+	-- Populate the participants table with the (unique) participants of week 1.	
+	INSERT INTO participants
+	SELECT DISTINCT ON (participant)
+	participant, fullname
+	FROM submissions
+	WHERE forecast_date = comp_start
+	ORDER BY participant, forecast_time DESC;		
 
+	-- Populate the forecasts table with the deduplicated submissions,
+	-- from known participants only.
+	INSERT INTO forecasts
+	SELECT forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
+	FROM submissions_dedup
+	JOIN participants USING (participant);
 
+	-- Call auto_fill() sequentially for each week of the competition.
+	LOOP
+		d := d + 7;
+		EXIT WHEN d > comp_end;
+		CALL auto_fill(d);
+	END LOOP;
 
--- Round all forecasts to specified precision
-UPDATE forecasts
-SET
-h1 = ROUND( h1 ),
-h2 = ROUND( h2 ),
-h3 = ROUND( h3 ),
-h4 = ROUND( h4 ),
-h5 = ROUND( h5 ),
-h6 = ROUND( h6 ),
-h7 = ROUND( h7 )
-WHERE true;
+	-- Round all forecasts to specified precision
+	UPDATE forecasts
+	SET
+	h1 = ROUND( h1 ),
+	h2 = ROUND( h2 ),
+	h3 = ROUND( h3 ),
+	h4 = ROUND( h4 ),
+	h5 = ROUND( h5 ),
+	h6 = ROUND( h6 ),
+	h7 = ROUND( h7 )
+	WHERE true;
+
+	COMMIT;
+END;
+$$;
+
+CALL clean('2020-10-19', '2020-10-26');
+SELECT * FROM participants;
+SELECT * FROM forecasts ORDER BY forecast_date, participant;
+
 
 CREATE VIEW forecasts_view AS
 SELECT *
@@ -141,7 +143,7 @@ ORDER BY forecast_date ASC, participant ASC;
 CREATE VIEW forecasts_group_mean AS
 SELECT
 forecast_date,
-300 AS participant,
+104 AS participant,
 ROUND( SUM( h1 ) / COUNT( h1 ) ) AS h1,
 ROUND( SUM( h2 ) / COUNT( h2 ) ) AS h2,
 ROUND( SUM( h3 ) / COUNT( h3 ) ) AS h3,
@@ -150,7 +152,7 @@ ROUND( SUM( h5 ) / COUNT( h5 ) ) AS h5,
 ROUND( SUM( h6 ) / COUNT( h6 ) ) AS h6,
 ROUND( SUM( h7 ) / COUNT( h7 ) ) AS h7
 FROM forecasts
-WHERE participant >= 1000
+WHERE origin = 'M'
 GROUP BY forecast_date;
 
 INSERT INTO forecasts
