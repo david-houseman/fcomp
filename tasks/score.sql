@@ -1,3 +1,16 @@
+DROP VIEW pivot;
+DROP VIEW pivot_query;
+DROP VIEW unpivot;
+DROP VIEW horizon_combined;
+DROP VIEW horizon_errors_view;
+DROP VIEW horizon_errors;
+DROP VIEW overall_errors_view;
+DROP VIEW overall_errors;
+DROP VIEW week_errors_view;
+DROP VIEW week_errors;
+DROP VIEW errors_view;
+DROP VIEW errors;
+
 CREATE VIEW errors AS
 SELECT
 a.forecast_date,
@@ -12,7 +25,7 @@ b.participant,
 FROM forecasts a
 JOIN forecasts b
 USING( forecast_date )
-WHERE a.participant = 100;
+WHERE a.participant = 0;
 
 CREATE VIEW errors_view AS
 SELECT * FROM errors
@@ -39,7 +52,8 @@ NATURAL JOIN participants
 ORDER BY forecast_date ASC, rmsfe ASC, participant ASC;
 
 SELECT * FROM week_errors_view;
-\copy ( SELECT * FROM week_errors_view ) TO 'QBUS3850_week_results.csv' WITH CSV HEADER
+
+\copy ( SELECT * FROM week_errors_view ) TO 'week_results.csv' WITH CSV HEADER DELIMITER '|'
 
 ----------------------------------------------------------------------------------
 
@@ -57,8 +71,8 @@ ORDER BY rmsfe ASC;
 
 
 SELECT * FROM overall_errors_view;
-\copy ( SELECT * FROM overall_errors_view ) TO 'QBUS3850_overall_results.csv' WITH CSV HEADER
 
+\copy ( SELECT * FROM overall_errors_view ) TO 'overall_results.csv' WITH CSV HEADER DELIMITER '|'
 
 ----------------------------------------------------------------------------------
 
@@ -81,7 +95,8 @@ NATURAL JOIN participants
 ORDER BY h1 ASC;
 
 SELECT * FROM horizon_errors_view;
-\copy ( SELECT * FROM horizon_errors_view ) TO 'QBUS3850_horizon_results.csv' WITH CSV HEADER
+
+\copy ( SELECT * FROM horizon_errors_view ) TO 'horizon_results.csv' WITH CSV HEADER DELIMITER '|'
 
 ----------------------------------------------------------------------------------
 
@@ -98,7 +113,7 @@ FROM errors
 WHERE participant >= 1000;
 
 SELECT * FROM horizon_combined;
-\copy ( SELECT * FROM horizon_combined ) TO 'QBUS3850_horizon_combined.csv' WITH CSV HEADER
+\copy ( SELECT * FROM horizon_combined ) TO 'horizon_combined.csv' WITH CSV HEADER DELIMITER '|'
 
 
 ----------------------------------------------------------------------------------
@@ -119,20 +134,6 @@ UNION ALL
 SELECT participant, forecast_date, 7 AS horizon, h7 FROM forecasts
 ORDER BY forecast_date, horizon, participant
 ;
-
-CREATE VIEW unpivot_three_col AS
-SELECT
-participant,
-fullname,
-CONCAT( forecast_date, '+', horizon ) AS forecast_date,
-forecast
-FROM unpivot
-NATURAL JOIN participants
-ORDER BY forecast_date, participant;
-
---SELECT * FROM unpivot_three_col;
-\copy ( SELECT * FROM unpivot_three_col ) TO 'QBUS3850_unpivot.csv' WITH CSV HEADER
-
 
 -- Couldn't get this to work. Not sure it improves on the simple CASE implementation.
 -- CREATE EXTENSION tablefunc;
@@ -177,4 +178,4 @@ GROUP BY forecast_date, horizon
 ORDER BY forecast_date, horizon;
 
 --SELECT * FROM unpivot_three_col;
-\copy ( SELECT * FROM pivot ) TO 'QBUS3850_pivot.csv' WITH CSV HEADER
+\copy ( SELECT * FROM pivot ) TO 'pivot.csv' WITH CSV HEADER DELIMITER '|'

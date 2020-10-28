@@ -58,17 +58,24 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 	INSERT INTO participants
-	VALUES
-	(300, 'Group Mean'),
-	(301, 'Group Median'),
-	(302, 'Combination Benchmark')
+	VALUES (300, 'Group Mean')
 	ON CONFLICT DO NOTHING;
 
 	INSERT INTO forecasts
 	SELECT * FROM forecasts_group_mean;
 
+
+	INSERT INTO participants
+	VALUES (301, 'Group Median')
+	ON CONFLICT DO NOTHING;
+
 	--INSERT INTO forecasts
 	--SELECT * FROM forecasts_group_median;
+
+
+	INSERT INTO participants
+	VALUES (302, 'Combination Benchmark')
+	ON CONFLICT DO NOTHING;
 
 	--INSERT INTO forecasts
 	--SELECT * FROM forecasts_combination;
