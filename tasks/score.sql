@@ -97,8 +97,6 @@ BEGIN
 	ON p.participant = c.participant
 	WHERE c.participant IS NULL
 	AND p.origin != 'B';
-	
-	COMMIT;
 END;
 $$;
 
@@ -157,8 +155,6 @@ BEGIN
 	h6 = ROUND( h6 ),
 	h7 = ROUND( h7 )
 	WHERE true;
-
-	COMMIT;
 END;
 $$;
 
@@ -238,8 +234,6 @@ BEGIN
 
 	--INSERT INTO forecasts
 	--SELECT * FROM forecasts_group_median;
-
-	COMMIT;
 END;
 $$;
 
@@ -342,8 +336,6 @@ AS $$
 BEGIN
 	CALL clean();
 	CALL auto_bench();
-
-	COMMIT;
 END;
 $$;
 
@@ -365,8 +357,38 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER on_submission_insert ON submissions;
+DROP FUNCTION trigger_function;
+
+CREATE FUNCTION trigger_function()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	CALL main();
+	RETURN NEW;
+END;
+$$;
+
+
+CREATE TRIGGER on_submission_insert
+AFTER INSERT
+ON submissions
+EXECUTE PROCEDURE trigger_function();
+
+CREATE TRIGGER on_submission_update
+AFTER UPDATE
+ON submissions
+EXECUTE PROCEDURE trigger_function();
+
+CREATE TRIGGER on_submission_delete
+AFTER DELETE
+ON submissions
+EXECUTE PROCEDURE trigger_function();
+
+
 --CALL add_participant(555555555,'David Q');
-CALL main();
+--CALL main();
 
 --SELECT * FROM participants;
 --SELECT * FROM forecasts_view;
