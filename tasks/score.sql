@@ -1,3 +1,5 @@
+SET client_min_messages TO WARNING;
+
 CREATE TABLE IF NOT EXISTS submissions
 (
 	forecast_date DATE NOT NULL,
@@ -22,6 +24,8 @@ DELETE FROM submissions;
 
 ----------------------------------------------------------------------------------
 
+DROP PROCEDURE IF EXISTS main;
+DROP PROCEDURE IF EXISTS auto_bench;
 DROP PROCEDURE IF EXISTS clean;
 DROP PROCEDURE IF EXISTS auto_fill;
 DROP VIEW IF EXISTS submissions_dedup;
@@ -61,12 +65,13 @@ ORDER BY forecast_date, participant;
 
 ----------------------------------------------------------------------------------
 
--- Select the last (by forecast_time) forecasts for each (forecast_date, participant).
+-- Select the most recent forecasts for each (forecast_date, participant).
 CREATE VIEW submissions_dedup AS
 SELECT DISTINCT ON (forecast_date, participant)
 forecast_date, participant, origin, h1, h2, h3, h4, h5, h6, h7
 FROM submissions
 ORDER BY forecast_date, participant, forecast_time DESC;
+
 
 
 -- Use the previous week's forecasts if this week's are missing.
@@ -96,12 +101,24 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE clean(comp_start DATE, comp_end DATE)
+CREATE PROCEDURE clean(comp_start2 DATE, comp_end2 DATE)
 LANGUAGE plpgsql
 AS $$
 DECLARE
-	d DATE := comp_start;
+	comp_start DATE;
+	comp_end DATE;
+	d DATE;	
 BEGIN
+	SELECT MIN(forecast_date)
+	INTO comp_start
+	FROM submissions
+	WHERE origin = 'M';
+
+	SELECT MAX(forecast_date)
+	INTO comp_end
+	FROM submissions
+	WHERE origin = 'M';
+
 	DELETE FROM forecasts;
 	DELETE FROM participants;
 
@@ -121,6 +138,7 @@ BEGIN
 	JOIN participants USING (participant);
 
 	-- Call auto_fill() sequentially for each week of the competition.
+	d := comp_start;
 	LOOP
 		d := d + 7;
 		EXIT WHEN d > comp_end;
@@ -143,7 +161,6 @@ BEGIN
 END;
 $$;
 
-DROP PROCEDURE IF EXISTS auto_bench;
 
 CREATE VIEW forecasts_combination AS
 SELECT
@@ -318,21 +335,30 @@ WHERE participant >= 1000;
 
 ------------------------------------------------------------------------------
 
-CALL clean('2020-10-19', '2020-10-26');
-SELECT * FROM participants;
-SELECT * FROM forecasts ORDER BY forecast_date, participant;
+CREATE PROCEDURE main()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	CALL clean('2020-10-19', '2020-10-26');
+	CALL auto_bench();
 
-CALL auto_bench();
+	COMMIT;
+END;
+$$;
 
-SELECT * FROM week_errors_view;
+CALL main();
+
+--SELECT * FROM participants;
+--SELECT * FROM forecasts_view;
+--SELECT * FROM week_errors_view;
+--SELECT * FROM overall_errors_view;
+--SELECT * FROM horizon_errors_view;
+--SELECT * FROM horizon_combined;
+
 \copy ( SELECT * FROM week_errors_view ) TO 'week_results.csv' WITH CSV HEADER DELIMITER '|'
-
-SELECT * FROM overall_errors_view;
 \copy ( SELECT * FROM overall_errors_view ) TO 'overall_results.csv' WITH CSV HEADER DELIMITER '|'
 
-SELECT * FROM horizon_errors_view;
 \copy ( SELECT * FROM horizon_errors_view ) TO 'horizon_results.csv' WITH CSV HEADER DELIMITER '|'
 
-SELECT * FROM horizon_combined;
 \copy ( SELECT * FROM horizon_combined ) TO 'horizon_combined.csv' WITH CSV HEADER DELIMITER '|'
 
