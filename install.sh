@@ -19,7 +19,7 @@ do
     pip3 install --upgrade -r "$req"
 done
 
-su postgres -c "createuser david" || true
-su postgres -c "createdb -O fcomp david" || true
+su postgres -c "createuser root" || true
+su postgres -c "createdb -O root root" || true
 
 

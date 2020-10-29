@@ -8,4 +8,5 @@ systemctl daemon-reload
 systemctl restart gunicorn
 
 crontab tasks/cron.tab
+psql -c '\i tasks/score.sql'
 
