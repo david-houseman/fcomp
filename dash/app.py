@@ -112,14 +112,13 @@ def component_submission_form():
 
 
 def component_table():
-    horizon_cols = [
-        (comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)
-    ]
-    read_cols = ["forecast_date", "snumber", "name", "method"] + horizon_cols + ["rmsfe"]
+    #horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
+    horizon_cols = ["h{}".format(h + 1) for h in range(7)]
+    read_cols = ["forecast_date", "participant", "fullname", "origin"] + horizon_cols + ["rmsfe"]
 
     connection = psycopg2.connect(user="david", port="5433", database="david")
     full_df = pd.read_sql(
-        "SELECT * FROM forecasts_view;",
+        "SELECT * FROM week_errors_view;",
         con=connection,
         parse_dates=["forecast_date"],
         columns=read_cols
@@ -130,10 +129,7 @@ def component_table():
         lambda t: t.strftime("%Y-%m-%d")
     )
 
-    horizon_cols = [
-        (comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)
-    ]
-    print_cols = ["forecast_datestr", "name"] + horizon_cols + ["rmsfe"]
+    print_cols = ["forecast_datestr", "fullname", "origin"] + horizon_cols + ["rmsfe"]
 
     now = datetime.now()
     content = []
