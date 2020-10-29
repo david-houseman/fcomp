@@ -101,7 +101,7 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE clean(comp_start2 DATE, comp_end2 DATE)
+CREATE PROCEDURE clean()
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -339,7 +339,7 @@ CREATE PROCEDURE main()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	CALL clean('2020-10-19', '2020-10-26');
+	CALL clean();
 	CALL auto_bench();
 
 	COMMIT;
