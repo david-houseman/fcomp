@@ -5,6 +5,6 @@ from fcast import fcast
 
 if __name__ == "__main__":
     download(datetime.now(), "../data/aemo/")
-    fcast("Fri", "../data/aemo/", "../data/forecasts.csv")
+    fcast("../data/aemo/", "../data/forecasts.csv")
 
 

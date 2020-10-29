@@ -356,7 +356,7 @@ BEGIN
 	INSERT INTO submissions
 	SELECT comp_start,'09:00:00', new_participant, new_fullname, 'A',
 	       h1, h2, h3, h4, h5, h6, h7
-	FROM submissions WHERE forecast_date = '2020-10-19' AND participant = 101;
+	FROM submissions WHERE forecast_date = comp_start AND participant = 101;
 END;
 $$;
 

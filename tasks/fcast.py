@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime as dt
+import psycopg2
 
 from fnmatch import fnmatch
 import os
@@ -61,40 +62,51 @@ def fcast_sarima(y):
     return fc[1:8]    
     
 
-def write_fcast(f, now, snumber, name, fcasts):
+def write_fcast(cursor, now, snumber, name, fcasts):
 
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
     method = "B"
 
     assert(len(fcasts) == 7 )
-    
-    record = [date_str, time_str, snumber, name, method] + [
-        str(round(f,0)) for f in fcasts
-    ]
-    print("|".join(record))
-    f.write("|".join(record) + "\n")
-
+    cursor.execute(
+        """
+INSERT INTO submissions 
+VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
+""",
+        (date_str, time_str, snumber, name, "B", *fcasts),
+    )
+ 
 
 def fcast(aemo_dir, submissions_file):
     comp_start, comp_end = read_config("../config/config.json")
+    db_config = {"user": "david", "port": "5433", "database": "david"}
+    
     y = read_data(aemo_dir)
 
     # If today is submission_day, generate benchmark forecasts.
     now = dt.datetime.now()
     if now.weekday() == comp_start.weekday():
-        with open(submissions_file, "a+") as f:    
-            write_fcast(f, now, "000000100", "Seasonal RW", fcast_seasonalrw(y))
-            write_fcast(f, now, "000000101", "Holt-Winters", fcast_ses(y))
-            write_fcast(f, now, "000000102", "SARIMA", fcast_sarima(y))
-            return
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        write_fcast(cursor, now, 100, "Seasonal RW", fcast_seasonalrw(y))
+        write_fcast(cursor, now, 101, "Holt-Winters", fcast_ses(y))
+        write_fcast(cursor, now, 102, "SARIMA", fcast_sarima(y))
+        cursor.execute("CALL main();")
+        conn.commit()
+        conn.close()
+        return
         
     # If today is the day after submission_day, generate actuals.
     if now.weekday() == (comp_start.weekday() + 1) % 7:
-        now = dt.datetime.combine(y.index[-8], dt.time())
-        with open(submissions_file, "a+") as f:        
-            write_fcast(f, now, "000000000", "Actual", y[-7:])
-            return
+        forecast_date = dt.datetime.combine(y.index[-8], dt.time())
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        write_fcast(cursor, forecast_date, 0, "Actual", y[-7:])
+        cursor.execute("CALL main();")
+        conn.commit()
+        conn.close()
+        return
     
 if __name__ == "__main__":
     fcast("../data/aemo/", "../data/submissions.csv")
