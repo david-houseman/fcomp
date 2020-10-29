@@ -85,7 +85,7 @@ def fcast(aemo_dir, submissions_file):
     if now.weekday() == comp_start.weekday():
         with open(submissions_file, "a+") as f:    
             write_fcast(f, now, "000000100", "Seasonal RW", fcast_seasonalrw(y))
-            write_fcast(f, now, "000000101", "SES", fcast_ses(y))
+            write_fcast(f, now, "000000101", "Holt-Winters", fcast_ses(y))
             write_fcast(f, now, "000000102", "SARIMA", fcast_sarima(y))
             return
         
