@@ -357,36 +357,6 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER on_submission_insert ON submissions;
-DROP FUNCTION trigger_function;
-
-CREATE FUNCTION trigger_function()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-	CALL main();
-	RETURN NEW;
-END;
-$$;
-
-
-CREATE TRIGGER on_submission_insert
-AFTER INSERT
-ON submissions
-EXECUTE PROCEDURE trigger_function();
-
-CREATE TRIGGER on_submission_update
-AFTER UPDATE
-ON submissions
-EXECUTE PROCEDURE trigger_function();
-
-CREATE TRIGGER on_submission_delete
-AFTER DELETE
-ON submissions
-EXECUTE PROCEDURE trigger_function();
-
-
 --CALL add_participant(555555555,'David Q');
 --CALL main();
 
