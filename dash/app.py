@@ -10,6 +10,8 @@ import json
 import math
 import pandas as pd
 import numpy as np
+import psycopg2
+
 # import plotly.graph_objs as go
 
 from datetime import datetime, timedelta, date, time
@@ -41,8 +43,8 @@ def read_config(config_path):
 # Set some globals. Todo: not sure how else to pass these into the callbacks.
 comp_start, comp_end, sub_start, sub_end = read_config("../config/config.json")
 
-forecasts_file = "../data/forecasts.csv"
 submissions_file = "../data/submissions.csv"
+
 
 def competition_days():
     t = comp_start
@@ -110,30 +112,39 @@ def component_submission_form():
 
 
 def component_table():
-    horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
-    read_cols = ["fcast_date", "snumber", "name", "method"] + horizon_cols + ["rmsfe"]
-    
-    full_df = pd.read_csv(
-        forecasts_file, sep="|", names=read_cols, parse_dates=["fcast_date"]
-    )
+    horizon_cols = [
+        (comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)
+    ]
+    read_cols = ["forecast_date", "snumber", "name", "method"] + horizon_cols + ["rmsfe"]
 
-    full_df["fcast_datestr"] = full_df["fcast_date"].map(
+    connection = psycopg2.connect(user="david", port="5433", database="david")
+    full_df = pd.read_sql(
+        "SELECT * FROM forecasts_view;",
+        con=connection,
+        parse_dates=["forecast_date"],
+        columns=read_cols
+    ) 
+    connection.close()
+    
+    full_df["forecast_datestr"] = full_df["forecast_date"].map(
         lambda t: t.strftime("%Y-%m-%d")
     )
 
-    horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
-    print_cols = ["fcast_datestr", "name"] + horizon_cols + ["rmsfe"]
+    horizon_cols = [
+        (comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)
+    ]
+    print_cols = ["forecast_datestr", "name"] + horizon_cols + ["rmsfe"]
 
-    now = datetime.now()    
+    now = datetime.now()
     content = []
     for t in competition_days():
-        week_df = full_df[full_df["fcast_date"] == t]
+        week_df = full_df[full_df["forecast_date"] == t]
         if week_df.empty:
             continue
 
         if now < t + timedelta(days=1):
-            continue;      
-    
+            continue
+
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
@@ -257,23 +268,36 @@ def update_form(n_clicks, name, snumber, fcasts_str):
         return enabled_tuple(msg)
 
     try:
-        fcasts = fstrs.map(lambda s: float(s))
+        fcasts = [float(s) for s in fstrs]
     except ValueError:
         msg = "Failed to parse forecast {} as float.".format(s)
         return enabled_tuple(msg)
 
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
-    method = "M"
-    record = [date_str, time_str, snumber, name, method] + [str(f) for f in fcasts]
+    origin = "M"
+    record = [date_str, time_str, snumber, name, origin] + [str(f) for f in fcasts]
 
     with open(submissions_file, "a+") as f:
         f.write("|".join(record) + "\n")
 
+    connection = psycopg2.connect(user="david", port="5433", database="david")
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+INSERT INTO submissions 
+VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
+""",
+        (date_str, time_str, snumber, name, origin, *fcasts),
+    )
+    cursor.execute("CALL main();")
+    connection.commit()
+    connection.close()
+    
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(" | ".join(record)),
-    ] 
+    ]
     return suspended_tuple(msg)
 
 
