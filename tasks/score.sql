@@ -24,6 +24,7 @@ DELETE FROM submissions;
 
 ----------------------------------------------------------------------------------
 
+DROP PROCEDURE IF EXISTS add_participant;
 DROP PROCEDURE IF EXISTS main;
 DROP PROCEDURE IF EXISTS auto_bench;
 DROP PROCEDURE IF EXISTS clean;
@@ -346,6 +347,25 @@ BEGIN
 END;
 $$;
 
+CREATE PROCEDURE add_participant(new_participant INTEGER, new_fullname VARCHAR)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	comp_start DATE;
+BEGIN
+	SELECT MIN(forecast_date)
+	INTO comp_start
+	FROM submissions
+	WHERE origin = 'M';
+
+	INSERT INTO submissions
+	SELECT comp_start,'09:00:00', new_participant, new_fullname, 'A',
+	       h1, h2, h3, h4, h5, h6, h7
+	FROM submissions WHERE forecast_date = '2020-10-19' AND participant = 101;
+END;
+$$;
+
+--CALL add_participant(555555555,'David Q');
 CALL main();
 
 --SELECT * FROM participants;
