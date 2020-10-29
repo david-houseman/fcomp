@@ -111,36 +111,38 @@ def component_submission_form():
     )
 
 
-def component_table():
-    #horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
+def component_weekly_results():
+    # horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
     horizon_cols = ["h{}".format(h + 1) for h in range(7)]
-    read_cols = ["forecast_date", "participant", "fullname", "origin"] + horizon_cols + ["rmsfe"]
-
-    connection = psycopg2.connect(user="david", port="5433", database="david")
-    full_df = pd.read_sql(
-        "SELECT * FROM week_errors_view;",
-        con=connection,
-        parse_dates=["forecast_date"],
-        columns=read_cols
-    ) 
-    connection.close()
-    
-    full_df["forecast_datestr"] = full_df["forecast_date"].map(
-        lambda t: t.strftime("%Y-%m-%d")
+    read_cols = (
+        ["forecast_date", "participant", "fullname", "origin"]
+        + horizon_cols
+        + ["rmsfe"]
     )
-
     print_cols = ["forecast_datestr", "fullname", "origin"] + horizon_cols + ["rmsfe"]
-
+    
+    connection = psycopg2.connect(user="david", port="5433", database="david")
     now = datetime.now()
     content = []
     for t in competition_days():
-        week_df = full_df[full_df["forecast_date"] == t]
+        week_df = pd.read_sql(
+            "SELECT * FROM week_errors_view WHERE forecast_date = %s;",
+            params=[t],
+            con=connection,
+            parse_dates=["forecast_date"],
+            columns=read_cols,
+        )
+        
         if week_df.empty:
             continue
 
         if now < t + timedelta(days=1):
             continue
 
+        week_df["forecast_datestr"] = week_df["forecast_date"].map(
+            lambda t: t.strftime("%Y-%m-%d")
+        )
+    
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
@@ -149,6 +151,8 @@ def component_table():
         )
         content.append(html.P(t.strftime("%Y-%m-%d")))
 
+    connection.close()
+        
     content.reverse()
     return html.Div([html.H4("Weekly results")] + content)
 
@@ -179,7 +183,7 @@ def app_layout():
         html.Hr(),
         component_submission_form(),
         html.Hr(),
-        component_table(),
+        component_weekly_results(),
         html.Hr(),
         component_git_version(),
     ]
@@ -289,7 +293,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
     cursor.execute("CALL main();")
     connection.commit()
     connection.close()
-    
+
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(" | ".join(record)),
