@@ -18,9 +18,12 @@ CREATE TABLE IF NOT EXISTS submissions
 
 ----------------------------------------------------------------------------------
 
-DELETE FROM submissions;
-\copy submissions FROM ../data/submissions.csv WITH CSV DELIMITER '|'
+--DELETE FROM submissions;
+--\copy submissions FROM ../data/submissions.csv WITH CSV DELIMITER '|'
 --SELECT * FROM submissions;
+
+-- Take a backup copy of submissions. This gets written as user pgadmin.
+COPY submissions TO '/tmp/submissions.csv' WITH CSV DELIMITER '|';
 
 ----------------------------------------------------------------------------------
 
