@@ -11,9 +11,6 @@ do
 done
 
 pip3 install --upgrade pip setuptools
-virtualenv --always-copy -p python3 venv
-source venv/bin/activate
-
 for req in requirements-py.txt */requirements-py.txt
 do
     pip3 install --upgrade -r "$req"
