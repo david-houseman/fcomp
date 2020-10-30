@@ -1,2 +1,2 @@
-15 13 * * FRI cd fcomp/tasks && python3 update.py
-15 13 * * SAT cd fcomp/tasks && python3 update.py
+15 13 * * FRI cd fcomp/tasks && python3 update.py >>tasks.log 2>&1 
+15 13 * * SAT cd fcomp/tasks && python3 update.py >>tasks.log 2>&1 
