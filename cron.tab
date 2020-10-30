@@ -1,2 +1,2 @@
-15 9 * * FRI python3 tasks/update.py
-15 9 * * SAT python3 tasks/update.py
+15 13 * * FRI cd fcomp/tasks && python3 update.py
+15 13 * * SAT cd fcomp/tasks && python3 update.py
