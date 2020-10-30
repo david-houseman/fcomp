@@ -56,7 +56,8 @@ def competition_days():
 
 def component_title():
     return html.Div(
-        html.H2("USyd QBUS3850 Forecast Competition"), style={"padding": 50}
+        html.H1("USyd QBUS3850 Forecast Competition"),
+        style={"padding": 40, "text-align": "center"}
     )
 
 
@@ -130,6 +131,7 @@ def component_weekly_results():
     )
 
     connection = psycopg2.connect(user="root", database="root")
+
     now = datetime.now()
     content = []
     for t in competition_days():
@@ -164,9 +166,12 @@ def component_weekly_results():
     content.reverse()
 
     header = [
-        html.H4("Weekly results"),
+        html.Div(
+            html.H2("Weekly results"),
+            style={"padding": 20, "text-align": "center"}
+        ),
         html.P(
-            "Origin column abbreviations: 'A' = Auto, 'B' = Benchmark, 'M' = Manual."
+            "Origin column abbreviations: 'A' = Auto-fill, 'B' = Benchmark, 'M' = Manual."
         ),
     ]
 
