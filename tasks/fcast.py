@@ -89,7 +89,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
     
     # Write to the backup file.
     submissions_file = "../data/submissions.csv"
-    record = [date_str, time_str, snumber, name, origin] + [str(f) for f in fcasts]
+    record = [date_str, time_str, str(snumber), name, origin] + [str(f) for f in fcasts]
     with open(submissions_file, "a+") as bfile:        
         fcntl.flock(bfile, fcntl.LOCK_EX)
         bfile.write("|".join(record) + "\n")
