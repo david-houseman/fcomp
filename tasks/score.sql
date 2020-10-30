@@ -215,12 +215,11 @@ CREATE PROCEDURE auto_bench()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	INSERT INTO participants
-	VALUES (200, '**Combination**');
+	--INSERT INTO participants
+	--VALUES (200, '**Combination**');
 
-	INSERT INTO forecasts
-	SELECT * FROM forecasts_combination;
-
+	--INSERT INTO forecasts
+	--SELECT * FROM forecasts_combination;
 
 	INSERT INTO participants
 	VALUES (400, '**Group Mean**');
