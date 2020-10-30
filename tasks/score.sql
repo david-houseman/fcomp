@@ -33,6 +33,7 @@ DROP PROCEDURE IF EXISTS auto_bench;
 DROP PROCEDURE IF EXISTS clean;
 DROP PROCEDURE IF EXISTS auto_fill;
 DROP VIEW IF EXISTS submissions_dedup;
+DROP VIEW IF EXISTS submissions_view;
 DROP TABLE IF EXISTS forecasts CASCADE;
 DROP TABLE IF EXISTS participants CASCADE;
 
@@ -68,6 +69,12 @@ USING (participant)
 ORDER BY forecast_date, participant;
 
 ----------------------------------------------------------------------------------
+
+CREATE VIEW submissions_view AS
+SELECT *
+FROM submissions
+ORDER BY forecast_date, forecast_time, participant;
+
 
 -- Select the most recent forecasts for each (forecast_date, participant).
 CREATE VIEW submissions_dedup AS
