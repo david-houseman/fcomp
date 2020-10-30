@@ -64,7 +64,7 @@ def fcast_sarima(y):
     return fc[1:8]    
     
 
-def write_fcast(cursor, bfile, now, snumber, name, fcasts):
+def write_fcast(now, snumber, name, fcasts):
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
     origin = "B"
@@ -102,15 +102,15 @@ def fcast():
     # If today is submission_day, generate benchmark forecasts.
     now = dt.datetime.now()
     if now.weekday() == comp_start.weekday():
-        write_fcast(cursor, now, 100, "Seasonal RW", fcast_seasonalrw(y))
-        write_fcast(cursor, now, 101, "Holt-Winters", fcast_ses(y))
-        write_fcast(cursor, now, 102, "SARIMA", fcast_sarima(y))
+        write_fcast(now, 100, "**Seasonal RW**", fcast_seasonalrw(y))
+        write_fcast(now, 101, "**Holt-Winters**", fcast_ses(y))
+        write_fcast(now, 102, "**SARIMA**", fcast_sarima(y))
         return
         
     # If today is the day after submission_day, generate actuals.
     if now.weekday() == (comp_start.weekday() + 1) % 7:
         forecast_date = dt.datetime.combine(y.index[-8], dt.time())
-        write_fcast(cursor, forecast_date, 0, "Actual", y[-7:])
+        write_fcast(forecast_date, 0, "**Actual**", y[-7:])
         return
     
 if __name__ == "__main__":
