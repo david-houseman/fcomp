@@ -113,16 +113,19 @@ def component_submission_form():
 
 
 def component_weekly_results():
-    # horizon_cols = [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
-    horizon_cols = ["h{}".format(h + 1) for h in range(7)]
     read_cols = (
         ["forecast_date", "participant", "fullname", "origin"]
-        + horizon_cols
+        + ["h{}".format(h + 1) for h in range(7)]
         + ["rmsfe"]
     )
-    print_cols = (
+    select_cols = (
         ["forecast_datestr", "participant", "fullname", "origin"]
-        + horizon_cols
+        + ["h{}".format(h + 1) for h in range(7)]
+        + ["rmsfe"]
+    )
+    title_cols = (
+        ["forecast_date", "participant", "fullname", "origin"]
+        + [(comp_start + timedelta(days=h + 1)).strftime("%a") for h in range(7)]
         + ["rmsfe"]
     )
 
@@ -151,7 +154,7 @@ def component_weekly_results():
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
-                columns=[{"name": i, "id": i} for i in print_cols],
+                columns=[{"name": i, "id": j} for i, j in zip(title_cols, select_cols)],
             )
         )
         content.append(html.P(t.strftime("%Y-%m-%d")))
