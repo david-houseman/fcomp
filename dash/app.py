@@ -120,8 +120,12 @@ def component_weekly_results():
         + horizon_cols
         + ["rmsfe"]
     )
-    print_cols = ["forecast_datestr", "fullname", "origin"] + horizon_cols + ["rmsfe"]
-    
+    print_cols = (
+        ["forecast_datestr", "participant", "fullname", "origin"]
+        + horizon_cols
+        + ["rmsfe"]
+    )
+
     connection = psycopg2.connect(user="root", database="root")
     now = datetime.now()
     content = []
@@ -133,7 +137,7 @@ def component_weekly_results():
             parse_dates=["forecast_date"],
             columns=read_cols,
         )
-        
+
         if week_df.empty:
             continue
 
@@ -143,7 +147,7 @@ def component_weekly_results():
         week_df["forecast_datestr"] = week_df["forecast_date"].map(
             lambda t: t.strftime("%Y-%m-%d")
         )
-    
+
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
@@ -153,9 +157,17 @@ def component_weekly_results():
         content.append(html.P(t.strftime("%Y-%m-%d")))
 
     connection.close()
-        
+
     content.reverse()
-    return html.Div([html.H4("Weekly results")] + content)
+
+    header = [
+        html.H4("Weekly results"),
+        html.P(
+            "Origin column abbreviations: 'A' = Auto, 'B' = Benchmark, 'M' = Manual."
+        ),
+    ]
+
+    return html.Div(header + content)
 
 
 def component_git_version():
@@ -288,7 +300,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
 """,
         (date_str, time_str, snumber, name, origin, *fcasts),
     )
-    cursor.execute("CALL main();")
+    cursor.execute("CALL main(%s, %s);", (comp_start.date(), comp_end.date()))
     connection.commit()
     connection.close()
 
@@ -298,7 +310,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
         fcntl.flock(f, fcntl.LOCK_EX)
         f.write("|".join(record) + "\n")
         fcntl.flock(f, fcntl.LOCK_UN)
-  
+
     # Write back to the app.
     msg = [
         html.P("Thank you for submitting your forecasts:"),
