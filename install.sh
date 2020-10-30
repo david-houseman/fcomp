@@ -18,5 +18,6 @@ done
 
 su postgres -c "createuser root" || true
 su postgres -c "createdb -O root root" || true
-
+su postgres -c "psql -c 'GRANT pg_write_server_files TO root'"
+su postgres -c "psql -c 'GRANT pg_read_server_files TO root'"
 
