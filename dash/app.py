@@ -11,6 +11,7 @@ import math
 import pandas as pd
 import numpy as np
 import psycopg2
+import fcntl
 
 # import plotly.graph_objs as go
 
@@ -276,11 +277,8 @@ def update_form(n_clicks, name, snumber, fcasts_str):
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
     origin = "M"
-    record = [date_str, time_str, snumber, name, origin] + [str(f) for f in fcasts]
 
-    with open(submissions_file, "a+") as f:
-        f.write("|".join(record) + "\n")
-
+    # Write to the database.
     connection = psycopg2.connect(user="root", database="root")
     cursor = connection.cursor()
     cursor.execute(
@@ -294,6 +292,14 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
     connection.commit()
     connection.close()
 
+    # Write to the backup file.
+    record = [date_str, time_str, snumber, name, origin] + [str(f) for f in fcasts]
+    with open(submissions_file, "a+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.write("|".join(record) + "\n")
+        fcntl.flock(f, fcntl.LOCK_UN)
+  
+    # Write back to the app.
     msg = [
         html.P("Thank you for submitting your forecasts:"),
         html.P(" | ".join(record)),
