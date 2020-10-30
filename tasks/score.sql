@@ -377,10 +377,10 @@ $$;
 --SELECT * FROM horizon_errors_view;
 --SELECT * FROM horizon_combined;
 
-\copy ( SELECT * FROM week_errors_view ) TO 'week_results.csv' WITH CSV HEADER DELIMITER '|'
-\copy ( SELECT * FROM overall_errors_view ) TO 'overall_results.csv' WITH CSV HEADER DELIMITER '|'
-
-\copy ( SELECT * FROM horizon_errors_view ) TO 'horizon_results.csv' WITH CSV HEADER DELIMITER '|'
-
-\copy ( SELECT * FROM horizon_combined ) TO 'horizon_combined.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM submissions_view ) TO 'submissions.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM forecasts_view ) TO 'forecasts.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM week_errors_view ) TO 'week_results.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM overall_errors_view ) TO 'overall_results.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM horizon_errors_view ) TO 'horizon_results.csv' WITH CSV HEADER DELIMITER '|'
+--\copy ( SELECT * FROM horizon_combined ) TO 'horizon_combined.csv' WITH CSV HEADER DELIMITER '|'
 
