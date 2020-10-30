@@ -14,6 +14,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 from util import is_sorted
 from common import read_config
 
+comp_start, comp_end = read_config("../config/config.json")
 
 def read_data(now):
     aemo_dir = "../data/aemo/"
@@ -84,7 +85,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
 """,
         (date_str, time_str, snumber, name, origin, *fcasts),
     )
-    cursor.execute("CALL main();")
+    cursor.execute("CALL main(%s, %s);", (comp_start.date(), comp_end.date()))
     conn.commit()
     conn.close()
     
@@ -98,7 +99,6 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
 
     
 def fcast(now):     
-    comp_start, comp_end = read_config("../config/config.json")
     y = read_data(now)
 
     # If today is submission_day, generate benchmark forecasts.

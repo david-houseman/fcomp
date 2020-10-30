@@ -29,6 +29,7 @@ COPY submissions TO '/tmp/submissions.csv' WITH CSV DELIMITER '|';
 
 DROP PROCEDURE IF EXISTS add_participant;
 DROP PROCEDURE IF EXISTS main;
+DROP PROCEDURE IF EXISTS main_guess_dates;
 DROP PROCEDURE IF EXISTS auto_bench;
 DROP PROCEDURE IF EXISTS clean;
 DROP PROCEDURE IF EXISTS auto_fill;
@@ -110,24 +111,12 @@ BEGIN
 END;
 $$;
 
-CREATE PROCEDURE clean()
+CREATE PROCEDURE clean(comp_start DATE, comp_end DATE)
 LANGUAGE plpgsql
 AS $$
 DECLARE
-	comp_start DATE;
-	comp_end DATE;
 	d DATE;	
 BEGIN
-	SELECT MIN(forecast_date)
-	INTO comp_start
-	FROM submissions
-	WHERE origin = 'M';
-
-	SELECT MAX(forecast_date)
-	INTO comp_end
-	FROM submissions
-	WHERE origin = 'M';
-
 	DELETE FROM forecasts;
 	DELETE FROM participants;
 
@@ -340,14 +329,39 @@ WHERE participant >= 1000;
 
 ------------------------------------------------------------------------------
 
-CREATE PROCEDURE main()
+
+
+CREATE PROCEDURE main(comp_start DATE, comp_end DATE)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-	CALL clean();
+	CALL clean(comp_start, comp_end);
 	CALL auto_bench();
 END;
 $$;
+
+CREATE PROCEDURE main_guess_dates()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	comp_start DATE;
+	comp_end DATE;
+BEGIN
+	SELECT MIN(forecast_date)
+	INTO comp_start
+	FROM submissions
+	WHERE origin = 'M';
+
+	SELECT MAX(forecast_date)
+	INTO comp_end
+	FROM submissions
+	WHERE origin = 'M';
+
+	CALL clean(comp_start, comp_end);
+	CALL auto_bench();
+END;
+$$;
+
 
 CREATE PROCEDURE add_participant(new_participant INTEGER, new_fullname VARCHAR)
 LANGUAGE plpgsql
