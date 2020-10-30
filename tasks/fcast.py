@@ -15,7 +15,7 @@ from util import is_sorted
 from common import read_config
 
 
-def read_data():
+def read_data(now):
     aemo_dir = "../data/aemo/"
 
     its = pd.DataFrame()
@@ -32,8 +32,9 @@ def read_data():
     assert is_sorted(its.index)
     print(its)
 
-    if its.index[-1].time() == dt.time(0, 0, 0):
-        its = its[:-1]
+    truncation_index = its.index.get_loc(dt.datetime.combine(now.date(), dt.time()))
+    its = its[:truncation_index]
+    print(its)
 
     ts = its.resample("1d").mean()
     y = ts["TOTALDEMAND"]
@@ -96,12 +97,11 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
         fcntl.flock(bfile, fcntl.LOCK_UN)
 
     
-def fcast():     
+def fcast(now):     
     comp_start, comp_end = read_config("../config/config.json")
-    y = read_data()
+    y = read_data(now)
 
     # If today is submission_day, generate benchmark forecasts.
-    now = dt.datetime.now()
     if now.weekday() == comp_start.weekday():
         write_fcast(now, 100, "**Seasonal RW**", fcast_seasonalrw(y))
         write_fcast(now, 101, "**Holt-Winters**", fcast_ses(y))
@@ -115,4 +115,6 @@ def fcast():
         return
     
 if __name__ == "__main__":
-    fcast()
+    #now = datetime.strptime( "2020-10-16", "%Y-%m-%d")
+    now = dt.datetime.now()
+    fcast(now)
