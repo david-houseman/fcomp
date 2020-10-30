@@ -14,7 +14,9 @@ from util import is_sorted
 from common import read_config
 
 
-def read_data(aemo_dir):
+def read_data():
+    aemo_dir = "../data/aemo/"
+
     its = pd.DataFrame()
     for fname in sorted(os.listdir(aemo_dir)):
         file = os.path.join(aemo_dir, fname)
@@ -62,51 +64,54 @@ def fcast_sarima(y):
     return fc[1:8]    
     
 
-def write_fcast(cursor, now, snumber, name, fcasts):
-
+def write_fcast(cursor, bfile, now, snumber, name, fcasts):
     date_str = now.strftime(format="%Y-%m-%d")
     time_str = now.strftime(format="%H:%M:%S")
-    method = "B"
+    origin = "B"
 
     assert(len(fcasts) == 7 )
+
+    # Write to the database.
+    db_config = {"user": "root", "database": "root"}
+    conn = psycopg2.connect(**db_config)
+    cursor = conn.cursor()
     cursor.execute(
         """
 INSERT INTO submissions 
 VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
 """,
-        (date_str, time_str, snumber, name, "B", *fcasts),
+        (date_str, time_str, snumber, name, origin, *fcasts),
     )
- 
-
-def fcast(aemo_dir, submissions_file):
-    comp_start, comp_end = read_config("../config/config.json")
-    db_config = {"user": "root", "database": "root"}
+    cursor.execute("CALL main();")
+    conn.commit()
+    conn.close()
     
-    y = read_data(aemo_dir)
+    # Write to the backup file.
+    submissions_file = "../data/submissions.csv"
+    record = [date_str, time_str, snumber, name, origin] + [str(f) for f in fcasts]
+    with open(submissions_file, "a+") as bfile:        
+        fcntl.flock(bfile, fcntl.LOCK_EX)
+        bfile.write("|".join(record) + "\n")
+        fcntl.flock(bfile, fcntl.LOCK_UN)
+
+    
+def fcast():     
+    comp_start, comp_end = read_config("../config/config.json")
+    y = read_data()
 
     # If today is submission_day, generate benchmark forecasts.
     now = dt.datetime.now()
     if now.weekday() == comp_start.weekday():
-        conn = psycopg2.connect(**db_config)
-        cursor = conn.cursor()
         write_fcast(cursor, now, 100, "Seasonal RW", fcast_seasonalrw(y))
         write_fcast(cursor, now, 101, "Holt-Winters", fcast_ses(y))
         write_fcast(cursor, now, 102, "SARIMA", fcast_sarima(y))
-        cursor.execute("CALL main();")
-        conn.commit()
-        conn.close()
         return
         
     # If today is the day after submission_day, generate actuals.
     if now.weekday() == (comp_start.weekday() + 1) % 7:
         forecast_date = dt.datetime.combine(y.index[-8], dt.time())
-        conn = psycopg2.connect(**db_config)
-        cursor = conn.cursor()
         write_fcast(cursor, forecast_date, 0, "Actual", y[-7:])
-        cursor.execute("CALL main();")
-        conn.commit()
-        conn.close()
         return
     
 if __name__ == "__main__":
-    fcast("../data/aemo/", "../data/submissions.csv")
+    fcast()
