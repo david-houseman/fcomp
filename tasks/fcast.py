@@ -80,7 +80,7 @@ VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );
 
 def fcast(aemo_dir, submissions_file):
     comp_start, comp_end = read_config("../config/config.json")
-    db_config = {"user": "david", "port": "5433", "database": "david"}
+    db_config = {"user": "root", "database": "root"}
     
     y = read_data(aemo_dir)
 

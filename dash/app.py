@@ -121,7 +121,7 @@ def component_weekly_results():
     )
     print_cols = ["forecast_datestr", "fullname", "origin"] + horizon_cols + ["rmsfe"]
     
-    connection = psycopg2.connect(user="david", port="5433", database="david")
+    connection = psycopg2.connect(user="root", database="root")
     now = datetime.now()
     content = []
     for t in competition_days():
@@ -281,7 +281,7 @@ def update_form(n_clicks, name, snumber, fcasts_str):
     with open(submissions_file, "a+") as f:
         f.write("|".join(record) + "\n")
 
-    connection = psycopg2.connect(user="david", port="5433", database="david")
+    connection = psycopg2.connect(user="root", database="root")
     cursor = connection.cursor()
     cursor.execute(
         """

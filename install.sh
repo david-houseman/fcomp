@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 ln -sf /usr/share/zoneinfo/Australia/Sydney /etc/localtime
