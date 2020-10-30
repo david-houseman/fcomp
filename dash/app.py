@@ -113,6 +113,31 @@ def component_submission_form():
     )
 
 
+def component_overall_results():
+    read_cols = ["participant", "fullname", "count", "rmsfe"]
+
+    connection = psycopg2.connect(user="root", database="root")
+    overall_df = pd.read_sql(
+        "SELECT * FROM overall_errors_view",
+        con=connection,
+        columns=read_cols,
+    )
+    connection.close()
+    
+    table = dtab.DataTable(
+        data=overall_df.to_dict("records"),
+        columns=[{"name": i, "id": i} for i in read_cols],
+    )
+    
+    header = [
+        html.Div(
+            html.H2("Overall results"),
+            style={"padding": 20, "text-align": "center"}
+        ),
+    ]
+    return html.Div(header + [table])
+
+    
 def component_weekly_results():
     read_cols = (
         ["forecast_date", "participant", "fullname", "origin"]
@@ -203,6 +228,8 @@ def app_layout():
         component_title(),
         html.Hr(),
         component_submission_form(),
+        html.Hr(),
+        component_overall_results(),
         html.Hr(),
         component_weekly_results(),
         html.Hr(),
