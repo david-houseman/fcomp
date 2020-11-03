@@ -12,12 +12,13 @@ import pandas as pd
 import numpy as np
 import psycopg2
 import fcntl
-
-# import plotly.graph_objs as go
-
 from datetime import datetime, timedelta, date, time
 import re
 import os
+# import plotly.graph_objs as go
+
+#from colorscale import colorscale_fill
+from colorscale import colorbar_fill
 
 server = flask.Flask(__name__)
 app = dash.Dash(
@@ -123,10 +124,13 @@ def component_overall_results():
         columns=read_cols,
     )
     connection.close()
-    
+
+    styles = colorbar_fill(overall_df, column='rmsfe')
+
     table = dtab.DataTable(
         data=overall_df.to_dict("records"),
         columns=[{"name": i, "id": i} for i in read_cols],
+        style_data_conditional=styles,
     )
     
     header = [
@@ -139,14 +143,15 @@ def component_overall_results():
 
     
 def component_weekly_results():
+    horizon_cols = ["h{}".format(h + 1) for h in range(7)]
     read_cols = (
         ["forecast_date", "participant", "fullname", "origin"]
-        + ["h{}".format(h + 1) for h in range(7)]
+        + horizon_cols
         + ["rmsfe"]
     )
     select_cols = (
         ["forecast_datestr", "participant", "fullname", "origin"]
-        + ["h{}".format(h + 1) for h in range(7)]
+        + horizon_cols
         + ["rmsfe"]
     )
     title_cols = (
@@ -156,6 +161,13 @@ def component_weekly_results():
     )
 
     connection = psycopg2.connect(user="root", database="root")
+
+    min_err = 0.0
+    max_err = pd.read_sql(
+        "SELECT MAX(rmsfe) FROM week_errors_view",
+        con=connection,
+        columns=["max"]
+    )["max"].iloc[0]
 
     now = datetime.now()
     content = []
@@ -178,10 +190,13 @@ def component_weekly_results():
             lambda t: t.strftime("%Y-%m-%d")
         )
 
+        styles = colorbar_fill(week_df, column='rmsfe', max_val=max_err)
+        
         content.append(
             dtab.DataTable(
                 data=week_df.to_dict("records"),
                 columns=[{"name": i, "id": j} for i, j in zip(title_cols, select_cols)],
+                style_data_conditional=styles,
             )
         )
         content.append(html.P(t.strftime("%Y-%m-%d")))
